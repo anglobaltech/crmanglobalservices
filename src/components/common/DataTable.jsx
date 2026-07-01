@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 const PAGE_SIZES = [20, 50, 100];
 const MAX_CELL_LEN = 30; 
 
-function OverflowCell({ value }) {
+export function OverflowCell({ value }) {
   const [open, setOpen] = useState(false);
   const str = value == null ? "—" : String(value);
   const isLong = str.length > MAX_CELL_LEN;
@@ -13,15 +13,15 @@ function OverflowCell({ value }) {
 
   return (
     <>
-      <div className="flex items-center gap-1 max-w-[180px]">
-        <span className="truncate text-gray-700 text-xs">{str}</span>
-        <button
-          onClick={() => setOpen(true)}
-          className="flex-shrink-0 text-blue-400 hover:text-blue-600 text-xs cursor-pointer leading-none"
-          title="View full content"
-        >
+      <div 
+        className="flex items-center gap-1 max-w-[180px] cursor-pointer group"
+        onClick={() => setOpen(true)}
+        title="View full content"
+      >
+        <span className="truncate text-gray-700 text-xs group-hover:text-blue-600 transition-colors">{str}</span>
+        <span className="flex-shrink-0 text-gray-400 group-hover:text-blue-600 text-[10px] leading-none transition-colors">
           ▼
-        </button>
+        </span>
       </div>
 
       {open && (
@@ -52,11 +52,26 @@ function OverflowCell({ value }) {
   );
 }
 
-export default function DataTable({ columns, data, loading }) {
+export default function DataTable({ 
+  columns, 
+  data, 
+  loading,
+  totalItems = null,
+  currentPage = null,
+  onPageChange = null,
+  pageSize: controlledPageSize = null,
+  onPageSizeChange = null
+}) {
   const [sortCol, setSortCol]   = useState(null);
   const [sortDir, setSortDir]   = useState("asc");
-  const [pageSize, setPageSize] = useState(20);
-  const [page, setPage]         = useState(1);
+  const [localPageSize, setLocalPageSize] = useState(20);
+  const [localPage, setLocalPage]         = useState(1);
+
+  const isServer = totalItems !== null && currentPage !== null;
+
+  const pageSize = isServer ? (controlledPageSize || 20) : localPageSize;
+  const page = isServer ? currentPage : localPage;
+  const setPage = isServer && onPageChange ? onPageChange : setLocalPage;
 
   const handleSort = (col) => {
     if (!col.key) return;
@@ -77,12 +92,19 @@ export default function DataTable({ columns, data, loading }) {
     return sortDir === "asc" ? cmp : -cmp;
   });
 
-  const total      = sorted.length;
+  const total      = isServer ? totalItems : sorted.length;
   const totalPages = Math.ceil(total / pageSize);
   const start      = (page - 1) * pageSize;
-  const paged      = sorted.slice(start, start + pageSize);
+  const paged      = isServer ? sorted : sorted.slice(start, start + pageSize);
 
-  const handlePageSize = (size) => { setPageSize(size); setPage(1); };
+  const handlePageSize = (size) => { 
+    if (isServer && onPageSizeChange) {
+      onPageSizeChange(size);
+    } else {
+      setLocalPageSize(size); 
+    }
+    setPage(1); 
+  };
 
   return (
     <div className="w-full flex flex-col rounded-xl border border-gray-100 shadow-sm bg-white overflow-hidden">

@@ -28,7 +28,7 @@ import {
   Building2,
 } from "lucide-react";
 import api from "@/services/api";
-import DataTable from "@/components/common/DataTable";
+import DataTable, { OverflowCell } from "@/components/common/DataTable";
 
 const STATUS_CONFIG = {
   allocated: {
@@ -165,44 +165,7 @@ function timeAgo(iso) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-function ExpandCell({ text }) {
-  const [open, setOpen] = useState(false);
-  if (!text) return <span className="text-gray-300 text-xs">—</span>;
-  return (
-    <>
-      <div
-        className="max-w-[130px] cursor-pointer"
-        onClick={() => setOpen(true)}
-      >
-        <p className="text-xs truncate text-inherit">{text}</p>
-      </div>
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/30 z-[200] flex items-center justify-center p-4"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 border border-gray-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-gray-800">Full Note</p>
-              <button
-                onClick={() => setOpen(false)}
-                className="text-gray-400 hover:text-gray-700 cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {text}
-            </p>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
+
 
 // ── Shared details popup — used by both Contact and Product cells ──
 function LeadDetailsPopup({ lead, onClose }) {
@@ -836,14 +799,14 @@ export default function SalesPage() {
     {
       label: "Name",
       render: (lead) => (
-        <div>
-          <p className="font-semibold text-gray-900 whitespace-nowrap text-xs">
+        <div className="max-w-[160px]">
+          <p className="font-semibold text-gray-900 text-xs truncate" title={lead.name}>
             {lead.name}
           </p>
           {lead.companyName && (
-            <p className="text-xs text-gray-400 flex items-center gap-0.5 mt-0.5 whitespace-nowrap">
-              <Building2 size={8} />
-              {lead.companyName}
+            <p className="text-xs text-gray-400 flex items-center gap-0.5 mt-0.5 truncate" title={lead.companyName}>
+              <Building2 size={8} className="flex-shrink-0" />
+              <span className="truncate">{lead.companyName}</span>
             </p>
           )}
           {lead.followupDate && lead.followupDate < todayStr() && (
@@ -940,9 +903,9 @@ export default function SalesPage() {
       label: "Last Remark",
       render: (lead) =>
         lead.followUpNote ? (
-          <ExpandCell text={lead.followUpNote} />
+          <OverflowCell value={lead.followUpNote} />
         ) : lead.notes ? (
-          <ExpandCell text={lead.notes} />
+          <OverflowCell value={lead.notes} />
         ) : (
           <span className="text-gray-300 text-xs">—</span>
         ),
@@ -1221,7 +1184,16 @@ export default function SalesPage() {
         </div>
       )}
 
-      <DataTable columns={columns} data={leads} loading={loading} />
+      <DataTable 
+        columns={columns} 
+        data={leads} 
+        loading={loading}
+        totalItems={total}
+        currentPage={page}
+        onPageChange={setPage}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* UPDATE MODAL */}
       {modal === "update" && selectedLead && (

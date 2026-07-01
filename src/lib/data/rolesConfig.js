@@ -28,7 +28,6 @@ export const MODULE_LABELS = {
   dashboard: "Dashboard",
   users: "Users",
   sales: "Sales",
-  leads: "Leads",
   allocate: "Allocate",
   settings: "Settings",
 };
@@ -37,23 +36,22 @@ export const MODULES = [
   "dashboard",
   "users",
   "sales",
-  "leads",
   "allocate",
   "settings",
 ];
 
 
 export const DEFAULT_PERMISSIONS = {
-  "Super Admin": { dashboard: true, users: true, sales: true, leads: true, allocate: true, settings: true },
-  "Founder & CEO": { dashboard: true, users: true, sales: true, leads: true, allocate: true, settings: true },
-  "Director": { dashboard: true, users: true, sales: true, leads: true, allocate: true, settings: false },
-  "Branch Manager": { dashboard: true, users: false, sales: true, leads: true, allocate: true, settings: false },
-  "Manager": { dashboard: true, users: false, sales: true, leads: true, allocate: false, settings: false },
-  "Team Manager": { dashboard: true, users: false, sales: true, leads: true, allocate: false, settings: false },
-  "Assistant Manager": { dashboard: true, users: false, sales: true, leads: false, allocate: false, settings: false },
-  "Executive": { dashboard: true, users: false, sales: true, leads: false, allocate: false, settings: false },
-  "Intern": { dashboard: true, users: false, sales: false, leads: false, allocate: false, settings: false },
-  "Service Manager": { dashboard: true, users: false, sales: false, leads: false, allocate: true, settings: false },
-  "Senior Executive": { dashboard: true, users: false, sales: false, leads: false, allocate: false, settings: false },
-  "Support Staff": { dashboard: true, users: false, sales: false, leads: false, allocate: false, settings: false },
+  "Super Admin": { dashboard: true, users: true, sales: true, allocate: true, settings: true },
+  "Founder & CEO": { dashboard: true, users: true, sales: true, allocate: true, settings: true },
+  "Director": { dashboard: true, users: true, sales: true, allocate: true, settings: false },
+  "Branch Manager": { dashboard: true, users: false, sales: true, allocate: true, settings: false },
+  "Manager": { dashboard: true, users: false, sales: true, allocate: false, settings: false },
+  "Team Manager": { dashboard: true, users: false, sales: true, allocate: false, settings: false },
+  "Assistant Manager": { dashboard: true, users: false, sales: true, allocate: false, settings: false },
+  "Executive": { dashboard: true, users: false, sales: true, allocate: false, settings: false },
+  "Intern": { dashboard: true, users: false, sales: false, allocate: false, settings: false },
+  "Service Manager": { dashboard: true, users: false, sales: false, allocate: true, settings: false },
+  "Senior Executive": { dashboard: true, users: false, sales: false, allocate: false, settings: false },
+  "Support Staff": { dashboard: true, users: false, sales: false, allocate: false, settings: false },
 };

@@ -22,7 +22,7 @@ export default function AllocateLeadsPage() {
   const [filters, setFilters] = useState({ status: "unallocated", source: "", state: "", productInterest: "", search: "" });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const LIMIT = 20;
+  const [pageSize, setPageSize] = useState(20);
 
   const [modal, setModal]       = useState(null);
   const [assignUser, setAssignUser] = useState(null);
@@ -72,7 +72,7 @@ export default function AllocateLeadsPage() {
     setLoading(true);
     try {
       const params = Object.fromEntries(
-        Object.entries({ ...filters, page, limit: LIMIT }).filter(([_, v]) => v !== "" && v !== null),
+        Object.entries({ ...filters, page, limit: pageSize }).filter(([_, v]) => v !== "" && v !== null),
       );
       const res = await api.get("/api/leads", { params });
       setLeads(res.data.leads);
@@ -81,7 +81,7 @@ export default function AllocateLeadsPage() {
       showToast("Failed to load leads", "error");
     }
     setLoading(false);
-  }, [filters, page]);
+  }, [filters, page, pageSize]);
 
   const fetchStats = useCallback(async () => {
     const res = await api.get("/api/leads/stats");
@@ -173,7 +173,7 @@ export default function AllocateLeadsPage() {
   const setFilter = (k, v) => { setFilters((prev) => ({ ...prev, [k]: v })); setPage(1); };
   const clearFilters = () => { setFilters({ status: "unallocated", source: "", state: "", productInterest: "", search: "" }); setPage(1); };
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== "status").length;
-  const totalPages = Math.ceil(total / LIMIT);
+  const totalPages = Math.ceil(total / pageSize);
 
   const columns = [
     {
@@ -192,14 +192,9 @@ export default function AllocateLeadsPage() {
     },
     { label: "Lead ID", key: "leadId" },
     { label: "Name",    key: "name"   },
-    {
-      label: "Company",
-      render: (lead) => lead.companyName
-        ? <span className="text-xs text-gray-700 flex items-center gap-1">{lead.companyName}</span>
-        : <span className="text-gray-300 text-xs">—</span>,
-    },
+    { label: "Company", key: "companyName" },
     { label: "Phone", key: "phone" },
-    { label: "Email", render: (lead) => lead.email || "—" },
+    { label: "Email", key: "email" },
     {
       label: "Source",
       render: (lead) => (
@@ -213,8 +208,8 @@ export default function AllocateLeadsPage() {
         }`}>{lead.source}</span>
       ),
     },
-    { label: "Location", render: (lead) => lead.state || "—" },
-    { label: "Services",  render: (lead) => lead.productInterest || "—" },
+    { label: "Location", key: "state" },
+    { label: "Services", key: "productInterest" },
     {
       label: "Status",
       render: (lead) => (
@@ -305,19 +300,17 @@ export default function AllocateLeadsPage() {
       )}
 
       <div className="flex-1 min-h-0 overflow-hidden px-0 pb-4">
-        <DataTable columns={columns} data={leads} loading={loading} />
+        <DataTable 
+          columns={columns} 
+          data={leads} 
+          loading={loading} 
+          totalItems={total}
+          currentPage={page}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+        />
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 cursor-pointer">← Prev</button>
-          <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
-          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 cursor-pointer">Next →</button>
-        </div>
-      )}
 
       {/* Delete Confirm Modal */}
       {deleteTarget && (

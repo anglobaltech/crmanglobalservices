@@ -7,6 +7,7 @@ import {
   Users, ArrowUpRight, PhoneOutgoing, ChevronRight,
 } from "lucide-react";
 import api from "@/services/api";
+import DataTable, { OverflowCell } from "@/components/common/DataTable";
 
 const STATUS_CONFIG = {
   allocated:      { label: "Allocated",     color: "#3b82f6", bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200" },
@@ -96,7 +97,7 @@ export default function ActivityDashboard() {
   const [users, setUsers]     = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   const [page, setPage]       = useState(1);
-  const LIMIT = 15;
+  const [pageSize, setPageSize] = useState(15);
 
   // Default: today — no date selected shows today
   const [dateFrom, setDateFrom] = useState(todayStr());
@@ -124,14 +125,14 @@ export default function ActivityDashboard() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: LIMIT, dateFrom, dateTo };
+      const params = { page, limit: pageSize, dateFrom, dateTo };
       if (userId) params.userId = userId;
       const res = await api.get("/api/activity", { params });
       setLogs(res.data.logs || []);
       setTotal(res.data.total || 0);
     } catch {}
     setLoading(false);
-  }, [dateFrom, dateTo, userId, page]);
+  }, [dateFrom, dateTo, userId, page, pageSize]);
 
   const fetchUsers = useCallback(async () => {
     if (!isManager) return;
@@ -149,8 +150,6 @@ export default function ActivityDashboard() {
 
   const resetFilters = () => { setDateFrom(todayStr()); setDateTo(todayStr()); setUserId(""); setPage(1); };
   const isFiltered   = dateFrom !== todayStr() || dateTo !== todayStr() || userId;
-
-  const totalPages = Math.ceil(total / LIMIT);
 
   // Donut chart data from logs
   const statusCounts = {};
@@ -174,6 +173,113 @@ export default function ActivityDashboard() {
   const userRows = Object.values(userMap).sort((a, b) => b.total - a.total);
 
   const isToday = dateFrom === todayStr() && dateTo === todayStr();
+
+  const columns = [
+    {
+      label: "Member",
+      render: (log) => (
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
+            {log.userName?.[0]?.toUpperCase()}
+          </div>
+          <div>
+            <p className="font-medium text-gray-800 whitespace-nowrap text-xs">{log.userName}</p>
+            <p className="text-xs text-gray-400">{log.userRole}</p>
+          </div>
+        </div>
+      )
+    },
+    {
+      label: "Lead",
+      render: (log) => (
+        <div>
+          <p className="font-medium text-gray-800 whitespace-nowrap text-xs">{log.leadName}</p>
+          <p className="text-xs text-gray-400">{log.leadId}</p>
+        </div>
+      )
+    },
+    {
+      label: "Status Change",
+      render: (log) => {
+        const ns = log.newData?.status;
+        const os = log.oldData?.status;
+        const sc = STATUS_CONFIG[ns] || {};
+        const osc = STATUS_CONFIG[os] || {};
+        if (os && ns) {
+          return (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`px-2 py-0.5 rounded-full text-xs border ${osc.bg||"bg-gray-50"} ${osc.text||"text-gray-500"} ${osc.border||"border-gray-200"}`}>
+                {osc.label || os}
+              </span>
+              <ChevronRight size={11} className="text-gray-400 flex-shrink-0"/>
+              <span className={`px-2 py-0.5 rounded-full text-xs border font-medium ${sc.bg||"bg-gray-50"} ${sc.text||"text-gray-500"} ${sc.border||"border-gray-200"}`}>
+                {sc.label || ns}
+              </span>
+            </div>
+          )
+        } else if (ns) {
+          return (
+            <span className={`px-2 py-0.5 rounded-full text-xs border ${sc.bg} ${sc.text} ${sc.border}`}>
+              {sc.label || ns}
+            </span>
+          )
+        }
+        return <span className="text-gray-300 text-xs">—</span>;
+      }
+    },
+    {
+      label: "Meeting",
+      render: (log) => {
+        if (log.newData?.meetingDate) {
+          return (
+            <div>
+              <p className="text-cyan-600 font-medium">{fmtDate(log.newData.meetingDate)}</p>
+              {log.newData?.meetingSubType && (
+                <p className="text-gray-400 capitalize">
+                  {log.newData.meetingSubType === "online" ? "🖥 Online" : log.newData.meetingSubType === "offline" ? "🏢 Offline" : "🔄 Reschedule"}
+                </p>
+              )}
+            </div>
+          )
+        }
+        return <span className="text-gray-300">—</span>;
+      }
+    },
+    {
+      label: "Follow-up",
+      render: (log) => {
+        if (log.newData?.followupDate) {
+          return <span className="text-amber-600 font-medium">{fmtDate(log.newData.followupDate)}</span>
+        }
+        return <span className="text-gray-300">—</span>;
+      }
+    },
+    {
+      label: "Remark",
+      render: (log) => {
+        const text = log.newData?.followUpNote || log.newData?.notes;
+        return <OverflowCell value={text} />;
+      }
+    },
+    {
+      label: "Time",
+      render: (log) => (
+        <div className="text-xs text-gray-400 whitespace-nowrap">
+          {timeAgo(log.createdAt)}
+          <p className="text-gray-300 text-xs mt-0.5">{fmtDate(log.createdAt)}</p>
+        </div>
+      )
+    },
+    {
+      label: "Details",
+      render: (log) => (
+        <button onClick={() => setSelectedLog(log)}
+          className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap">
+          <Eye size={11}/> View
+        </button>
+      )
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-5 md:p-6">
@@ -353,139 +459,16 @@ export default function ActivityDashboard() {
               <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">{total} records</span>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    {["Member","Lead","Status Change","Meeting","Follow-up","Remark","Time","Details"].map(h => (
-                      <th key={h} className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {loading ? (
-                    [...Array(6)].map((_,i) => (
-                      <tr key={i} className="animate-pulse">
-                        {[...Array(8)].map((_,j) => <td key={j} className="py-4 px-4"><div className="h-3 bg-gray-100 rounded w-20"/></td>)}
-                      </tr>
-                    ))
-                  ) : logs.map(log => {
-                    const ns = log.newData?.status;
-                    const os = log.oldData?.status;
-                    const sc = STATUS_CONFIG[ns] || {};
-                    const osc = STATUS_CONFIG[os] || {};
-
-                    return (
-                      <tr key={log.id} className="hover:bg-gray-50/60 transition-colors">
-                        {/* Member */}
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
-                              {log.userName?.[0]?.toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-800 whitespace-nowrap text-xs">{log.userName}</p>
-                              <p className="text-xs text-gray-400">{log.userRole}</p>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Lead */}
-                        <td className="py-3.5 px-4">
-                          <p className="font-medium text-gray-800 whitespace-nowrap text-xs">{log.leadName}</p>
-                          <p className="text-xs text-gray-400">{log.leadId}</p>
-                        </td>
-
-                        {/* Status change */}
-                        <td className="py-3.5 px-4">
-                          {os && ns ? (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`px-2 py-0.5 rounded-full text-xs border ${osc.bg||"bg-gray-50"} ${osc.text||"text-gray-500"} ${osc.border||"border-gray-200"}`}>
-                                {osc.label || os}
-                              </span>
-                              <ChevronRight size={11} className="text-gray-400 flex-shrink-0"/>
-                              <span className={`px-2 py-0.5 rounded-full text-xs border font-medium ${sc.bg||"bg-gray-50"} ${sc.text||"text-gray-500"} ${sc.border||"border-gray-200"}`}>
-                                {sc.label || ns}
-                              </span>
-                            </div>
-                          ) : (
-                            ns ? (
-                              <span className={`px-2 py-0.5 rounded-full text-xs border ${sc.bg} ${sc.text} ${sc.border}`}>
-                                {sc.label || ns}
-                              </span>
-                            ) : <span className="text-gray-300 text-xs">—</span>
-                          )}
-                        </td>
-
-                        {/* Meeting */}
-                        <td className="py-3.5 px-4 text-xs whitespace-nowrap">
-                          {log.newData?.meetingDate ? (
-                            <div>
-                              <p className="text-cyan-600 font-medium">{fmtDate(log.newData.meetingDate)}</p>
-                              {log.newData?.meetingSubType && (
-                                <p className="text-gray-400 capitalize">
-                                  {log.newData.meetingSubType === "online" ? "🖥 Online" : log.newData.meetingSubType === "offline" ? "🏢 Offline" : "🔄 Reschedule"}
-                                </p>
-                              )}
-                            </div>
-                          ) : <span className="text-gray-300">—</span>}
-                        </td>
-
-                        {/* Follow-up */}
-                        <td className="py-3.5 px-4 text-xs whitespace-nowrap">
-                          {log.newData?.followupDate ? (
-                            <span className="text-amber-600 font-medium">{fmtDate(log.newData.followupDate)}</span>
-                          ) : <span className="text-gray-300">—</span>}
-                        </td>
-
-                        {/* Remark */}
-                        <td className="py-3.5 px-4 max-w-[160px]">
-                          {log.newData?.followUpNote ? (
-                            <p className="text-xs text-amber-700 truncate" title={log.newData.followUpNote}>
-                               {log.newData.followUpNote}
-                            </p>
-                          ) : log.newData?.notes ? (
-                            <p className="text-xs text-gray-500 italic truncate" title={log.newData.notes}>
-                              {log.newData.notes}
-                            </p>
-                          ) : <span className="text-gray-300 text-xs">—</span>}
-                        </td>
-
-                        {/* Time */}
-                        <td className="py-3.5 px-4 text-xs text-gray-400 whitespace-nowrap">
-                          {timeAgo(log.createdAt)}
-                          <p className="text-gray-300 text-xs">{fmtDate(log.createdAt)}</p>
-                        </td>
-
-                        {/* Details */}
-                        <td className="py-3.5 px-4">
-                          <button onClick={() => setSelectedLog(log)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-medium cursor-pointer whitespace-nowrap">
-                            <Eye size={11}/> View
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
-                <span className="text-xs text-gray-400">
-                  Showing {(page-1)*LIMIT+1}–{Math.min(page*LIMIT,total)} of {total}
-                </span>
-                <div className="flex gap-1">
-                  <button disabled={page===1} onClick={()=>setPage(page-1)} className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 text-gray-600 cursor-pointer">Prev</button>
-                  {Array.from({length:Math.min(totalPages,5)},(_,i)=>i+1).map(p=>(
-                    <button key={p} onClick={()=>setPage(p)} className={`px-3 py-1.5 text-xs rounded-lg border cursor-pointer ${p===page?"bg-gray-900 border-gray-900 text-white":"bg-white border-gray-200 text-gray-500 hover:bg-gray-50"}`}>{p}</button>
-                  ))}
-                  <button disabled={page===totalPages} onClick={()=>setPage(page+1)} className="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-lg disabled:opacity-40 hover:bg-gray-50 text-gray-600 cursor-pointer">Next</button>
-                </div>
-              </div>
-            )}
+            <DataTable 
+              columns={columns} 
+              data={logs} 
+              loading={loading}
+              totalItems={total}
+              currentPage={page}
+              onPageChange={setPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         </>
       )}
@@ -519,7 +502,7 @@ export default function ActivityDashboard() {
                 <div className="p-3 bg-gray-50 rounded-xl">
                   <p className="text-xs text-gray-400 mb-0.5">Lead Name</p>
                   <p className="text-sm font-semibold text-gray-800">{selectedLog.leadName}</p>
-                  <p className="text-xs text-gray-400">#{selectedLog.leadId?.slice(-6)}</p>
+                  <p className="text-xs text-gray-400">#{selectedLog.leadId}</p>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-xl">
                   <p className="text-xs text-gray-400 mb-0.5">Action</p>

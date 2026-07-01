@@ -7,6 +7,7 @@ import {
   Users,
   BarChart3,
   ClipboardList,
+  Settings,
   X,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
@@ -28,25 +29,20 @@ export default function Sidebar() {
       path: "/sales",
       icon: BarChart3,
     },
-    user?.permissions?.users && {
-      name: "User Management",
-      path: "/users",
-      icon: Users,
-    },
-    // user?.permissions?.leads && {
-    //   name: "Leads",
-    //   path: "/leads",
-    //   icon: ClipboardList,
-    // },
     user?.permissions?.allocate && {
       name: "Allocate Leads",
       path: "/allocate-leads",
       icon: ClipboardList,
     },
+    user?.permissions?.users && {
+      name: "Users",
+      path: "/users",
+      icon: Users,
+    },
     user?.permissions?.settings && {
       name: "Settings",
       path: "/settings",
-      icon: Users,
+      icon: Settings,
     },
   ].filter(Boolean);
 
