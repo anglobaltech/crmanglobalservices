@@ -30,6 +30,7 @@ export const MODULE_LABELS = {
   sales: "Sales",
   allocate: "Allocate",
   settings: "Settings",
+  services: "Services",
 };
 
 export const MODULES = [
@@ -38,6 +39,7 @@ export const MODULES = [
   "sales",
   "allocate",
   "settings",
+  "services",
 ];
 
 

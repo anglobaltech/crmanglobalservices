@@ -8,6 +8,7 @@ import {
   BarChart3,
   ClipboardList,
   Settings,
+  Wrench,
   X,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
@@ -33,6 +34,11 @@ export default function Sidebar() {
       name: "Allocate Leads",
       path: "/allocate-leads",
       icon: ClipboardList,
+    },
+    user?.permissions?.services && {
+      name: "Services",
+      path: "/services",
+      icon: Wrench,
     },
     user?.permissions?.users && {
       name: "Users",

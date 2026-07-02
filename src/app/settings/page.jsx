@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { DEPARTMENTS, MODULES, DEPT_COLORS, MODULE_LABELS } from "@/lib/data/rolesConfig";
-import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal } from "lucide-react";
+import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal, Wrench } from "lucide-react";
 
 const MODULE_ICONS = {
   dashboard: LayoutDashboard,
@@ -11,6 +11,7 @@ const MODULE_ICONS = {
   sales: Briefcase,
   allocate: ClipboardList,
   settings: Settings,
+  services: Wrench,
 };
 
 const MODULE_DESCRIPTIONS = {
@@ -19,6 +20,7 @@ const MODULE_DESCRIPTIONS = {
   sales: "Manage the sales pipeline and metrics",
   allocate: "Assign and distribute leads to staff",
   settings: "Configure global system preferences",
+  services: "Assign and track employee service tasks",
 };
 
 export default function SettingsPage() {

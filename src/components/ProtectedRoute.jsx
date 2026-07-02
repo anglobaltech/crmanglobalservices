@@ -12,6 +12,7 @@ const routePermissions = {
   "/leads": "leads",
   "/allocate-leads": "allocate",
   "/settings": "settings",
+  "/services": "services",
 };
 
 export default function ProtectedRoute({ children }) {

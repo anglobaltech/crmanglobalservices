@@ -5,10 +5,13 @@ import { useSidebar } from "./SidebarContext";
 import { ChevronRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import { useState } from "react";
+import ProfileModal from "./ProfileModal";
 
 export default function Header() {
   const { setOpen } = useSidebar();
   const { user, logout } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
     <header className="h-16 bg-white shadow-sm flex items-center justify-between px-2">
@@ -33,12 +36,21 @@ export default function Header() {
         </Link>
       </div>
       <div className="flex items-center gap-4">
-        <span className="text-gray-600">
-          {user?.name || user?.email || "Guest"}
-        </span>
+        <div 
+          className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors"
+          onClick={() => setIsProfileOpen(true)}
+        >
+          <span className="text-gray-600 font-medium">
+            {user?.name || user?.email || "Guest"}
+          </span>
 
-        <div className="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-full font-bold">
-          {(user?.name?.[0] || user?.email?.[0] || "G").toUpperCase()}
+          <div className="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-full font-bold overflow-hidden shadow-sm">
+            {user?.profilePic ? (
+              <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              (user?.name?.[0] || user?.email?.[0] || "G").toUpperCase()
+            )}
+          </div>
         </div>
         <button
           onClick={logout}
@@ -65,6 +77,7 @@ export default function Header() {
           Logout
         </button>
       </div>
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </header>
   );
 }

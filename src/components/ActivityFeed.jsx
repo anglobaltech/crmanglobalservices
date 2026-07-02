@@ -57,12 +57,12 @@ function DonutChart({ data, total }) {
   const r    = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const cx = size / 2, cy = size / 2;
-  let offset = 0;
+  let currentOffset = 0;
   const segments = data.map(d => {
     const pct  = total > 0 ? d.value / total : 0;
     const dash = pct * circ;
-    const seg  = { ...d, dash, gap: circ - dash, offset };
-    offset += dash;
+    const seg  = { ...d, dash, gap: circ - dash, offset: currentOffset };
+    currentOffset += dash;
     return seg;
   });
 
