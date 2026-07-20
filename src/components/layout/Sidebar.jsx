@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Settings,
   Wrench,
+  FolderOpen,
   X,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
@@ -39,6 +40,11 @@ export default function Sidebar() {
       name: "Services",
       path: "/services",
       icon: Wrench,
+    },
+    user?.permissions?.services && {
+      name: "Projects",
+      path: "/projects",
+      icon: FolderOpen,
     },
     user?.permissions?.users && {
       name: "Users",
