@@ -174,8 +174,7 @@ export function useProject(id) {
       // Sanitize: remove characters invalid for folder names
       const sanitize = (str = "") => str.replace(/[\/\\:*?"<>|]/g, "").trim() || "Unknown";
       const companyFolder = sanitize(project?.clientName);
-      const projectFolder = sanitize(project?.projectName);
-      const storagePath = `${companyFolder}/${projectFolder}/${Date.now()}_${file.name}`;
+      const storagePath = `${companyFolder}/${Date.now()}_${file.name}`;
       const storageRef = ref(storage, storagePath);
       const task = uploadBytesResumable(storageRef, file);
 
@@ -222,8 +221,7 @@ export function useProject(id) {
     try {
       const sanitize = (str = "") => str.replace(/[\/\\:*?"<>|]/g, "").trim() || "Unknown";
       const companyFolder = sanitize(project?.clientName);
-      const projectFolder = sanitize(project?.projectName);
-      const storagePath = `${companyFolder}/${projectFolder}/docs/${slotId}_${Date.now()}_${file.name}`;
+      const storagePath = `${companyFolder}/${slotId}_${Date.now()}_${file.name}`;
       const storageRef = ref(storage, storagePath);
       const task = uploadBytesResumable(storageRef, file);
 
