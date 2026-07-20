@@ -99,6 +99,21 @@ export function useProject(id) {
       fetchActivity(1);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // ── Delete project ──────────────────────────────────────────────────────────
+  const deleteProject = async () => {
+    try {
+      const res = await fetch(`${API}/api/projects/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to delete project");
+      return true;
+    } catch (err) {
+      console.error(err);
       throw err;
     }
   };
@@ -325,7 +340,7 @@ export function useProject(id) {
     activity,
     actTotal,
     actPage,
-    actPageSize: ACT_PAGE_SIZE,
+    ACT_PAGE_SIZE,
     fetchActivity,
     // Actions
     toggleChecklistItem,
@@ -338,6 +353,7 @@ export function useProject(id) {
     uploadIsiDocSlot,
     removeIsiDocSlot,
     updateIsiDocSlot,
+    deleteProject,
     refetchAll,
   };
 }

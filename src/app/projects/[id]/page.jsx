@@ -797,12 +797,19 @@ export default function ProjectDetailPage({ params }) {
     addRemark, addComment, updateStatus,
     uploadDocument, deleteDocument,
     uploadIsiDocSlot, removeIsiDocSlot, updateIsiDocSlot,
+    ACT_PAGE_SIZE, deleteProject
   } = useProject(id);
 
   const [activeTab, setActiveTab]     = useState(null); 
   const [editingStatus, setEditingStatus] = useState(false);
   const [comment, setComment]         = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+  const [toast, setToast]             = useState(null);
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   if (loading) return <LoadingSpinner className="min-h-screen" />;
   if (!project) return <EmptyState title="Project not found" className="min-h-screen" />;
@@ -866,11 +873,30 @@ export default function ProjectDetailPage({ params }) {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8" style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="max-w-5xl mx-auto space-y-6">
 
-        {/* ── Back ── */}
-        <button onClick={() => router.push("/projects")}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 font-medium transition cursor-pointer">
-          <ArrowLeft size={16} /> Back to Projects
-        </button>
+        {/* ── Top Bar (Back & Actions) ── */}
+        <div className="flex items-center justify-between">
+          <button onClick={() => router.push("/projects")}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 font-medium transition cursor-pointer">
+            <ArrowLeft size={16} /> Back to Projects
+          </button>
+
+          {isManager && (
+            <button onClick={async () => {
+              if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+                try {
+                  await deleteProject();
+                  showToast("Project deleted successfully");
+                  setTimeout(() => router.push("/projects"), 1000);
+                } catch(err) { 
+                  showToast(err.message || "Failed to delete project", "error"); 
+                }
+              }
+            }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer">
+              <Trash2 size={14} /> Delete Project
+            </button>
+          )}
+        </div>
 
         {/* ── Header Card ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -1058,12 +1084,20 @@ export default function ProjectDetailPage({ params }) {
               activity={activity}
               actTotal={actTotal}
               actPage={actPage}
-              actPageSize={actPageSize}
+              actPageSize={ACT_PAGE_SIZE}
               onPageChange={fetchActivity}
             />
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${toast.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
+          {toast.type === "error" ? <X size={16} /> : <CheckCircle2 size={16} />} 
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
