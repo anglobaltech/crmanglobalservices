@@ -297,26 +297,95 @@ function LeadDetailsPopup({ lead, onClose }) {
 
 function ContactCell({ lead }) {
   const [open, setOpen] = useState(false);
+  const isLong = (lead.email && lead.email.length > 15) || (lead.companyName && lead.companyName.length > 15);
+
   return (
     <>
-      <div className="cursor-pointer" onClick={() => setOpen(true)}>
-        <div className="flex items-center gap-1 text-gray-700 whitespace-nowrap text-xs">
-          <Phone size={10} className="text-gray-400" />
-          {lead.phone}
+      <div 
+        className="cursor-pointer group flex flex-col gap-0.5" 
+        onClick={() => setOpen(true)}
+        title="View contact details"
+      >
+        <div className="flex items-center gap-1 max-w-[130px]">
+          <Phone size={10} className="text-gray-400 flex-shrink-0" />
+          <span className="truncate text-gray-700 text-xs group-hover:text-blue-600 transition-colors">
+            {lead.phone || "—"}
+          </span>
+          {isLong && (
+            <span className="flex-shrink-0 text-gray-400 group-hover:text-blue-600 text-[10px] leading-none transition-colors">
+              ▼
+            </span>
+          )}
         </div>
         {lead.companyName && (
-          <div className="flex items-center gap-1 text-gray-500 text-xs mt-0.5">
-            <span className="truncate max-w-[90px]">{lead.companyName}</span>
+          <div className="flex items-center gap-1 text-gray-500 text-[10px] max-w-[130px]">
+            <Building2 size={9} className="flex-shrink-0" />
+            <span className="truncate">{lead.companyName}</span>
           </div>
         )}
-        {lead.email && (
-          <div className="flex items-center gap-1 text-gray-400 text-xs mt-0.5">
-            <Mail size={9} />
-            <span className="truncate max-w-[80px]">{lead.email}</span>
+        {lead.email && !lead.companyName && (
+          <div className="flex items-center gap-1 text-gray-400 text-[10px] max-w-[130px]">
+            <Mail size={9} className="flex-shrink-0" />
+            <span className="truncate">{lead.email}</span>
           </div>
         )}
       </div>
-      {open && <LeadDetailsPopup lead={lead} onClose={() => setOpen(false)} />}
+
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[300] flex items-center justify-center p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 border border-gray-100"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-gray-800">Contact Details</p>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-gray-700 cursor-pointer p-1 rounded hover:bg-gray-100"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Phone</p>
+                <p className="text-sm text-gray-700 flex items-center gap-1.5">
+                  <Phone size={14} className="text-gray-400" />
+                  {lead.phone || "—"}
+                </p>
+              </div>
+              
+              {lead.email && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Email</p>
+                  <div className="text-sm text-gray-700 flex items-start gap-1.5">
+                    <Mail size={14} className="text-gray-400 flex-shrink-0 mt-0.5" />
+                    <span className="flex-1 whitespace-pre-wrap break-words leading-relaxed">
+                      {lead.email}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {lead.companyName && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Company</p>
+                  <div className="text-sm text-gray-700 flex items-start gap-1.5">
+                    <Building2 size={14} className="text-gray-400 flex-shrink-0 mt-0.5" />
+                    <span className="flex-1 whitespace-pre-wrap break-words leading-relaxed">
+                      {lead.companyName}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
