@@ -19,7 +19,6 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import EmptyState from "@/components/ui/EmptyState";
 
-// ─── Constants ────
 const STATUS_OPTIONS = [
   { value: "pending",     label: "Pending",     color: "bg-slate-100 text-slate-600" },
   { value: "in_progress", label: "In Progress", color: "bg-blue-100 text-blue-700" },
@@ -51,7 +50,6 @@ const ACTIVITY_COLORS = {
   document:       "bg-sky-100 text-sky-600",
 };
 
-// ─── Helpers ──
 function fmtDate(iso) {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -70,7 +68,6 @@ function FileTypeIcon({ name = "" }) {
   return <FileIcon2 size={16} className="text-gray-400" />;
 }
 
-// ─── Remark inline input ───
 function RemarkBox({ stepId, stepLabel, onSubmit }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -114,7 +111,6 @@ function RemarkBox({ stepId, stepLabel, onSubmit }) {
   );
 }
 
-// ─── Paginated activity feed ───
 function ActivityFeed({ activity, actTotal, actPage, actPageSize, onPageChange }) {
   const totalPages = Math.ceil(actTotal / actPageSize);
 
@@ -179,7 +175,6 @@ function ActivityFeed({ activity, actTotal, actPage, actPageSize, onPageChange }
   );
 }
 
-// ─── ISI Documents: Text Input Slot ──
 function TextSlotRow({ slot, idx, updateIsiDocSlot }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(slot.value || "");
@@ -246,7 +241,6 @@ function TextSlotRow({ slot, idx, updateIsiDocSlot }) {
   );
 }
 
-// ─── ISI Documents: Table Input Slot ───
 function TableSlotRow({ slot, idx, updateIsiDocSlot }) {
   const cols = slot.columns || [];
   const existingRows = Array.isArray(slot.value) ? slot.value : [];
@@ -267,7 +261,6 @@ function TableSlotRow({ slot, idx, updateIsiDocSlot }) {
   };
 
   const save = async () => {
-    // Remove completely empty rows before saving
     const clean = rows.filter(row => cols.some(c => row[c]?.trim()));
     setSaving(true);
     try {
@@ -368,7 +361,6 @@ function TableSlotRow({ slot, idx, updateIsiDocSlot }) {
   );
 }
 
-// ─── ISI: Documents Required tab ──
 function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlot, updateIsiDocSlot }) {
   const [uploadingSlot, setUploadingSlot] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({});
@@ -376,11 +368,10 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
   const slots = project.isiDocSlots || [];
   const isHallmarking = project.serviceType === "hallmarking";
 
-  // Count "completed" across all types
   const completedCount = slots.filter(s => {
     if (s.type === "text") return !!s.value?.trim();
     if (s.type === "table") return Array.isArray(s.value) && s.value.length > 0;
-    return !!s.file; // file type
+    return !!s.file;
   }).length;
 
   const handleUpload = async (slotId, file) => {
@@ -399,7 +390,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
     }
   };
 
-  // Uploaded-by color helper
   const uploadedByColor = (by = "") => {
     const b = by.toLowerCase();
     if (b.includes("my side") || b.includes("our side")) return "bg-blue-50 text-blue-600 border-blue-100";
@@ -452,7 +442,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
         </div>
 
         {slots.map((slot, idx) => {
-          // ── TEXT type ──
           if (slot.type === "text") {
             return (
               <div key={slot.id} className="border-b border-gray-50 last:border-0">
@@ -476,7 +465,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
             );
           }
 
-          // ── TABLE type ──
           if (slot.type === "table") {
             return (
               <div key={slot.id} className="border-b border-gray-50 last:border-0">
@@ -500,7 +488,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
             );
           }
 
-          // ── FILE type (default) ──
           const isDone = !!slot.file;
           return (
             <div key={slot.id}
@@ -525,7 +512,7 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
                   )}
                   {slot.file && (
                     <p className="text-xs text-gray-400 mt-0.5 truncate">
-                      📎 {slot.file.name}  ·  {fmtDate(slot.file.uploadedAt)}
+                       {slot.file.name}  ·  {fmtDate(slot.file.uploadedAt)}
                       {slot.file.size && ` · ${(slot.file.size / 1024).toFixed(0)} KB`}
                     </p>
                   )}
@@ -582,7 +569,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
   );
 }
 
-// ─── ISI: Process Stages tab ──
 function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark }) {
   const [stepModal, setStepModal] = useState(null);
   const [modalDate, setModalDate] = useState("");
@@ -739,11 +725,9 @@ function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark }) {
   );
 }
 
-// ─── Non-ISI flat checklist tab ───
 function FlatChecklistTab({ project, toggleChecklistItem }) {
   const checklist = project.checklist || [];
 
-  // Group by section (for BIS CRS etc.)
   const sections = {};
   checklist.forEach(item => {
     const sec = item.section || "Items";
@@ -785,7 +769,6 @@ function FlatChecklistTab({ project, toggleChecklistItem }) {
   );
 }
 
-// ─── Main Page ───
 export default function ProjectDetailPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
@@ -821,7 +804,6 @@ export default function ProjectDetailPage({ params }) {
   const typeConfig = SERVICE_TYPES[project.serviceType] || { label: project.serviceType, color: "bg-gray-100 text-gray-600 border-gray-200" };
   const statusConfig = STATUS_OPTIONS.find(s => s.value === project.status) || STATUS_OPTIONS[0];
 
-  // Progress calculation
   const isiStages   = project.isiStages || [];
   const isiDocSlots = project.isiDocSlots || [];
   const flatChecklist = project.checklist || [];
@@ -835,18 +817,15 @@ export default function ProjectDetailPage({ params }) {
 
   const progress = usesStages ? isiPct : flatPct;
 
-  // Default tab
   const defaultTab = usesStages ? "stages" : "checklist";
   const currentTab = activeTab || defaultTab;
 
-  // Count completed doc slots across all types (for tab label)
   const docSlotsCompleted = isiDocSlots.filter(s => {
     if (s.type === "text") return !!s.value?.trim();
     if (s.type === "table") return Array.isArray(s.value) && s.value.length > 0;
     return !!s.file;
   }).length;
 
-  // Tab definitions
   const tabs = usesStages
     ? [
         { key: "stages",    label: `Process Stages (${isiDoneSteps}/${isiTotalSteps})`, icon: ClipboardList },
@@ -870,14 +849,13 @@ export default function ProjectDetailPage({ params }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8" style={{ fontFamily: "Inter, sans-serif" }}>
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6" style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className="max-w-5xl mx-auto space-y-3">
 
-        {/* ── Top Bar (Back & Actions) ── */}
         <div className="flex items-center justify-between">
           <button onClick={() => router.push("/projects")}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 font-medium transition cursor-pointer">
-            <ArrowLeft size={16} /> Back to Projects
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-medium transition cursor-pointer">
+            <ArrowLeft size={14} /> Back to Projects
           </button>
 
           {isManager && (
@@ -892,53 +870,65 @@ export default function ProjectDetailPage({ params }) {
                 }
               }
             }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer">
-              <Trash2 size={14} /> Delete Project
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer">
+              <Trash2 size={12} /> Delete Project
             </button>
           )}
         </div>
 
         {/* ── Header Card ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className={`h-1.5 ${progress === 100 ? "bg-emerald-500" : "bg-blue-600"}`} />
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className={`h-1 ${progress === 100 ? "bg-emerald-500" : "bg-blue-600"}`} />
+          <div className="p-4">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Badge label={typeConfig.label} colorClass={typeConfig.color} />
-                  <span className="text-xs text-gray-400 font-mono">{project.id}</span>
+                  <span className="text-[11px] text-gray-400 font-mono bg-gray-50 px-2 py-0.5 rounded">{project.id}</span>
                   {project.status === "completed" && (
-                    <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-full">
-                      <CheckCircle2 size={11} /> DONE
+                    <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+                      <CheckCircle2 size={10} /> DONE
                     </span>
                   )}
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 mt-1">{project.projectName}</h1>
-                <p className="text-sm text-gray-500 mt-0.5">{project.clientName}</p>
+                <h1 className="text-lg font-bold text-gray-900">{project.projectName}</h1>
+                <p className="text-xs text-gray-500 mt-0.5">{project.clientName}</p>
               </div>
 
-              {/* Status dropdown */}
-              <div className="relative">
-                <button onClick={() => setEditingStatus(v => !v)}
-                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${statusConfig.color}`}>
-                  {statusConfig.label} <ChevronDown size={14} />
-                </button>
-                {editingStatus && (
-                  <div className="absolute right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden min-w-[180px]">
-                    {STATUS_OPTIONS.map(s => (
-                      <button key={s.value}
-                        onClick={() => { updateStatus(s.value); setEditingStatus(false); }}
-                        className={`w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm font-medium hover:bg-gray-50 transition cursor-pointer ${s.value === project.status ? "bg-blue-50 text-blue-700" : "text-gray-700"}`}>
-                        {s.label}
-                      </button>
-                    ))}
+              {/* Contact Info & Status dropdown */}
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                {/* Status dropdown */}
+                <div className="relative">
+                  <button onClick={() => setEditingStatus(v => !v)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${statusConfig.color}`}>
+                    {statusConfig.label} <ChevronDown size={12} />
+                  </button>
+                  {editingStatus && (
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden min-w-[160px]">
+                      {STATUS_OPTIONS.map(s => (
+                        <button key={s.value}
+                          onClick={() => { updateStatus(s.value); setEditingStatus(false); }}
+                          className={`w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-medium hover:bg-gray-50 transition cursor-pointer ${s.value === project.status ? "bg-blue-50 text-blue-700" : "text-gray-700"}`}>
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Contact info block */}
+                {(project.name || project.phone || project.email) && (
+                  <div className="text-[11px] text-right text-gray-500 bg-gray-50 rounded-lg p-2 border border-gray-100">
+                    {project.name && <p className="font-medium text-gray-700">{project.name}</p>}
+                    {project.phone && <p className="mt-0.5"><a href={`tel:${project.phone}`} className="hover:text-blue-600 transition">{project.phone}</a></p>}
+                    {project.email && <p className="mt-0.5"><a href={`mailto:${project.email}`} className="hover:text-blue-600 transition">{project.email}</a></p>}
                   </div>
                 )}
               </div>
             </div>
 
             {/* Progress */}
-            <div className="mt-5">
+            <div className="mt-3">
               <ProgressBar
                 progress={progress}
                 label={usesStages ? "Stage Progress" : "Checklist Progress"}
@@ -947,52 +937,57 @@ export default function ProjectDetailPage({ params }) {
             </div>
 
             {/* Meta row */}
-            <div className="flex flex-wrap gap-4 mt-5 pt-5 border-t border-gray-50 text-sm text-gray-500">
-              <div className="flex items-center gap-1.5">
-                <Users size={14} className="text-gray-400" />
+            <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <Users size={12} className="text-gray-400" />
                 <span>{project.assignedToNames?.join(", ") || "Unassigned"}</span>
               </div>
               {project.dueDate && (
-                <div className={`flex items-center gap-1.5 ${new Date(project.dueDate) < new Date() && project.status !== "completed" ? "text-red-600" : ""}`}>
-                  <Calendar size={14} className="text-gray-400" />
+                <div className={`flex items-center gap-1 ${new Date(project.dueDate) < new Date() && project.status !== "completed" ? "text-red-600" : ""}`}>
+                  <Calendar size={12} className="text-gray-400" />
                   <span>Due {fmtDate(project.dueDate)}</span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5">
-                <Clock size={14} className="text-gray-400" />
+              <div className="flex items-center gap-1">
+                <Clock size={12} className="text-gray-400" />
                 <span>Created {fmtDate(project.createdAt)}</span>
               </div>
+              {project.address && (
+                <div className="flex items-center gap-1 w-full sm:w-auto">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 flex-shrink-0"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span className="text-gray-600">{project.address}</span>
+                </div>
+              )}
             </div>
             {project.notes && (
-              <div className="mt-4 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-600">{project.notes}</div>
+              <div className="mt-2 bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-600">{project.notes}</div>
             )}
           </div>
         </div>
 
         {/* Completion banner */}
         {project.status === "completed" && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Award size={20} className="text-emerald-600" />
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Award size={15} className="text-emerald-600" />
             </div>
             <div>
-              <p className="font-bold text-emerald-800 text-sm">Project Completed! 🎉</p>
-              <p className="text-xs text-emerald-600 mt-0.5">This project is now in the Completed section.</p>
+              <p className="font-bold text-emerald-800 text-xs">Project Completed! 🎉</p>
+              <p className="text-[11px] text-emerald-600">This project is now in the Completed section.</p>
             </div>
           </div>
         )}
 
         {/* ── Tabs ── */}
-        <div className="flex border-b border-gray-200 gap-0 overflow-x-auto">
+        <div className="flex border-b border-gray-200 gap-0 overflow-x-auto bg-white rounded-t-xl">
           {tabs.map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition cursor-pointer whitespace-nowrap flex-shrink-0 ${currentTab === key ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-              <Icon size={15} /> {label}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition cursor-pointer whitespace-nowrap flex-shrink-0 ${currentTab === key ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+              <Icon size={13} /> {label}
             </button>
           ))}
         </div>
 
-        {/* ── ISI / BIS CRS: Process Stages ── */}
         {currentTab === "stages" && usesStages && (
           <IsiStagesTab
             project={project}
@@ -1002,7 +997,6 @@ export default function ProjectDetailPage({ params }) {
           />
         )}
 
-        {/* ── ISI / BIS CRS: Documents Required (upload slots) ── */}
         {currentTab === "documents" && usesStages && (
           <IsiDocumentsTab
             project={project}
@@ -1013,12 +1007,10 @@ export default function ProjectDetailPage({ params }) {
           />
         )}
 
-        {/* ── Non-ISI: Checklist ── */}
         {currentTab === "checklist" && !usesStages && (
           <FlatChecklistTab project={project} toggleChecklistItem={toggleChecklistItem} />
         )}
 
-        {/* ── Non-ISI: Documents ── */}
         {currentTab === "documents" && !usesStages && (
           <div className="space-y-4">
             <label className="relative flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer hover:border-gray-300 bg-white transition">

@@ -36,7 +36,7 @@ export function useProjects(filters = {}) {
       if (filters.status) params.set("status", filters.status);
       if (filters.search) params.set("search", filters.search);
 
-      const res = await fetch(`${API}/api/projects?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API}/api/projects?${params}&pageSize=500`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || "Failed to fetch projects");

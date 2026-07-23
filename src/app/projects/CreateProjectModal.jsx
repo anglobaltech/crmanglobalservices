@@ -57,7 +57,6 @@ export default function CreateProjectModal({ onClose, onCreated }) {
 
   const handleSubmit = async () => {
     if (!form.projectName) return setError("Company name is required");
-    // Automatically set clientName same as projectName if left empty since they requested to replace Project Name with Company Name
     const finalForm = { ...form, clientName: form.clientName || form.projectName };
     setSaving(true); 
     setError("");

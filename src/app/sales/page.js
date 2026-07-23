@@ -165,9 +165,6 @@ function timeAgo(iso) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-
-
-// ── Shared details popup — used by both Contact and Product cells ──
 function LeadDetailsPopup({ lead, onClose }) {
   return (
     <div
@@ -298,7 +295,6 @@ function LeadDetailsPopup({ lead, onClose }) {
   );
 }
 
-// Contact cell — clicking opens the shared popup
 function ContactCell({ lead }) {
   const [open, setOpen] = useState(false);
   return (
@@ -325,32 +321,78 @@ function ContactCell({ lead }) {
   );
 }
 
-// Product cell — clicking opens the exact same shared popup
 function ProductCell({ lead }) {
   const [open, setOpen] = useState(false);
+  const productStr = lead.productInterest || "";
+  const isLong = productStr.length > 20;
+
   return (
     <>
-      <div className="cursor-pointer" onClick={() => setOpen(true)}>
-        {lead.productInterest && (
-          <div
-            className="text-xs text-gray-700 max-w-[90px] truncate"
-            title={lead.productInterest}
-          >
-            {lead.productInterest}
-          </div>
-        )}
+      <div 
+        className="cursor-pointer group flex flex-col gap-0.5" 
+        onClick={() => setOpen(true)}
+        title="View details"
+      >
+        <div className="flex items-center gap-1 max-w-[130px]">
+          <span className="truncate text-gray-700 text-xs group-hover:text-blue-600 transition-colors">
+            {productStr || "—"}
+          </span>
+          {(isLong || lead.state) && (
+            <span className="flex-shrink-0 text-gray-400 group-hover:text-blue-600 text-[10px] leading-none transition-colors">
+              ▼
+            </span>
+          )}
+        </div>
         {lead.state && (
-          <div className="flex items-center gap-1 text-gray-400 text-xs mt-0.5">
-            <MapPin size={9} />
-            {lead.state}
+          <div className="flex items-center gap-1 text-gray-400 text-[10px] max-w-[130px]">
+            <MapPin size={9} className="flex-shrink-0" />
+            <span className="truncate">{lead.state}</span>
           </div>
-        )}
-
-        {!lead.productInterest && !lead.state && (
-          <span className="text-gray-300 text-xs">—</span>
         )}
       </div>
-      {open && <LeadDetailsPopup lead={lead} onClose={() => setOpen(false)} />}
+
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/30 z-[300] flex items-center justify-center p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 border border-gray-100"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold text-gray-800">Product & Location Details</p>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-gray-700 cursor-pointer p-1 rounded hover:bg-gray-100"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Product Interest</p>
+                <p className="text-sm text-gray-700 leading-relaxed break-words">
+                  {productStr || "—"}
+                </p>
+              </div>
+              
+              {lead.state && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Location / State</p>
+                  <div className="text-sm text-gray-700 flex items-start gap-1.5">
+                    <MapPin size={14} className="text-gray-400 flex-shrink-0 mt-0.5" />
+                    <span className="flex-1 whitespace-pre-wrap break-words leading-relaxed">
+                      {lead.state}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
