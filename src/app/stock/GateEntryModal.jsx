@@ -101,21 +101,37 @@ const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint }) => {
           }
         </div>
       ) : (
-        <label className="flex items-center gap-2.5 px-3 py-2.5 border border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group">
-          <div className={`w-7 h-7 ${iconBg} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-            <Icon size={13} />
+        <div className="border border-dashed border-gray-200 rounded-xl p-2.5 hover:border-blue-300 bg-white transition-colors">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-7 h-7 ${iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+              <Icon size={13} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-gray-600 leading-tight">{label}</p>
+              {hint && <p className="text-[9px] text-gray-400 leading-tight mt-0.5">{hint}</p>}
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-gray-600 leading-tight">{label}</p>
-            {hint && <p className="text-[9px] text-gray-400 leading-tight mt-0.5">{hint}</p>}
+          <div className="flex gap-2">
+            <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+              <Camera size={11} className="text-gray-500" />
+              <span className="text-[9px] font-semibold text-gray-600">Camera</span>
+              <input type="file" accept={accept} capture="environment" className="hidden"
+                onChange={async (e) => {
+                  if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
+                }}
+              />
+            </label>
+            <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+              <Upload size={11} className="text-gray-500" />
+              <span className="text-[9px] font-semibold text-gray-600">Storage</span>
+              <input type="file" accept={accept} className="hidden"
+                onChange={async (e) => {
+                  if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
+                }}
+              />
+            </label>
           </div>
-          <span className="ml-auto text-[9px] text-gray-400 font-medium flex-shrink-0">Upload</span>
-          <input type="file" accept={accept} capture="environment" className="hidden"
-            onChange={async (e) => {
-              if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
-            }}
-          />
-        </label>
+        </div>
       )}
     </div>
   );
