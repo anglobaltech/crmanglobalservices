@@ -63,17 +63,17 @@ async function fileToBase64(file) {
   });
 }
 
-const FileUpload = ({ label, value, onChange, accept, hint }) => (
+const FileUpload = ({ label, value, onChange, accept, hint, fileName }) => (
   <div>
     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">{label}</label>
     <label className="flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-3 py-2.5 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
       <Upload size={12} className="text-gray-400 flex-shrink-0" />
       <span className={`text-xs truncate ${value ? "text-emerald-600 font-semibold" : "text-gray-500"}`}>
-        {value ? "✓ File selected" : "Tap to upload"}
+        {value ? fileName || "✓ File selected" : "Tap to upload"}
       </span>
-      <input type="file" accept={accept} className="hidden"
+      <input type="file" accept={accept} capture="environment" className="hidden"
         onChange={async (e) => {
-          if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
+          if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]), e.target.files[0].name);
         }}
       />
     </label>
@@ -110,7 +110,7 @@ const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint }) => {
             {hint && <p className="text-[9px] text-gray-400 leading-tight mt-0.5">{hint}</p>}
           </div>
           <span className="ml-auto text-[9px] text-gray-400 font-medium flex-shrink-0">Upload</span>
-          <input type="file" accept={accept} className="hidden"
+          <input type="file" accept={accept} capture="environment" className="hidden"
             onChange={async (e) => {
               if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
             }}
@@ -161,6 +161,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
     coaAvailable: null,
     coaDetails: "",
     coaFile: null,
+    coaFileName: "",
     productName: "",
     packagingDetails: "",
     importedBy: "",
@@ -426,17 +427,14 @@ export default function GateEntryModal({ onClose, onCreated }) {
 
                 {form.coaAvailable === true && (
                   <div className="p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg space-y-2.5">
-                    <Field label="COA Reference / Details">
-                      <Input
-                        placeholder="COA certificate number or reference"
-                        value={form.coaDetails}
-                        onChange={e => set("coaDetails", e.target.value)}
-                      />
-                    </Field>
                     <FileUpload
                       label="Upload COA Document"
                       value={form.coaFile}
-                      onChange={v => set("coaFile", v)}
+                      fileName={form.coaFileName}
+                      onChange={(v, name) => {
+                        set("coaFile", v);
+                        set("coaFileName", name);
+                      }}
                       accept="image/*,application/pdf"
                       hint="Upload COA certificate (image or PDF)"
                     />
