@@ -11,6 +11,22 @@ import api from "@/services/api";
 import DataTable from "@/components/common/DataTable";
 
 const SOURCES = ["manual","excel","website","tradeindia","justdial","google-ads"];
+const PAGE_SIZE = 50;
+
+const ALL_ALLOCATE_COLUMNS = [
+  { key: "select", label: "Select" },
+  { key: "leadId", label: "Lead ID" },
+  { key: "name", label: "Name" },
+  { key: "companyName", label: "Company" },
+  { key: "phone", label: "Phone" },
+  { key: "email", label: "Email" },
+  { key: "source", label: "Source" },
+  { key: "state", label: "Location" },
+  { key: "productInterest", label: "Services" },
+  { key: "status", label: "Status" },
+  { key: "assignedTo", label: "Assigned To" },
+  { key: "actions", label: "Actions" },
+];
 
 export default function AllocateLeadsPage() {
   const [leads, setLeads]   = useState([]);
@@ -22,7 +38,8 @@ export default function AllocateLeadsPage() {
   const [filters, setFilters] = useState({ status: "unallocated", source: "", state: "", productInterest: "", search: "" });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
+  const [selectedCols, setSelectedCols] = useState(ALL_ALLOCATE_COLUMNS.map(c => c.key));
 
   const [modal, setModal]       = useState(null);
   const [assignUser, setAssignUser] = useState(null);
@@ -177,6 +194,7 @@ export default function AllocateLeadsPage() {
 
   const columns = [
     {
+      key: "select",
       label: (
         <button onClick={toggleAll}>
           {selected.size === leads.length && leads.length > 0
@@ -197,6 +215,7 @@ export default function AllocateLeadsPage() {
     { label: "Email", key: "email" },
     {
       label: "Source",
+      key: "source",
       render: (lead) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
           lead.source === "tradeindia" ? "bg-orange-100 text-orange-700" :
@@ -212,15 +231,17 @@ export default function AllocateLeadsPage() {
     { label: "Services", key: "productInterest" },
     {
       label: "Status",
+      key: "status",
       render: (lead) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${lead.status === "allocated" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
           {lead.status}
         </span>
       ),
     },
-    { label: "Assigned To", render: (lead) => lead.assignedToName || "—" },
+    { label: "Assigned To", key: "assignedTo", render: (lead) => lead.assignedToName || "—" },
     {
       label: "Actions",
+      key: "actions",
       render: (lead) => lead.status === "unallocated" ? (
         <button onClick={() => { setSelected(new Set([lead.id])); setModal("assign"); }}
           className="px-3 py-1 bg-black cursor-pointer text-white rounded-lg text-xs">
@@ -231,7 +252,7 @@ export default function AllocateLeadsPage() {
   ];
 
   return (
-    <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-6 h-full">
+    <div className="flex flex-col flex-1 min-w-0 overflow-hidden p-3 sm:p-4 lg:p-4 h-full">
       {toast && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${toast.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
           {toast.type === "error" ? <AlertCircle size={16} /> : <Check size={16} />} {toast.msg}
@@ -239,41 +260,44 @@ export default function AllocateLeadsPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Allocate Leads</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Manage and assign leads to CRM users</p>
+          <h1 className="text-xl sm:text-xl font-bold text-gray-900 tracking-tight">Allocate Leads</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5 hidden sm:block">Manage and assign leads to CRM users</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button onClick={() => setModal("import")}
-            className="flex items-center gap-2 px-4 py-2.5 cursor-pointer bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium transition-colors shadow-sm">
-            <Upload size={15} /> Import Excel
+            className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 cursor-pointer bg-white hover:bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-700 font-medium transition-colors shadow-sm">
+            <Upload size={14} />
+            <span className="hidden sm:inline">Import Excel</span>
           </button>
           <button onClick={() => setModal("add")}
-            className="flex items-center gap-2 px-4 py-2.5 cursor-pointer bg-gray-900 hover:bg-gray-700 rounded-xl text-sm font-medium text-white transition-colors shadow-sm">
-            <Plus size={15} /> Add Lead
+            className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 sm:py-2.5 cursor-pointer bg-gray-900 hover:bg-gray-700 rounded-xl text-xs sm:text-sm font-medium text-white transition-colors shadow-sm">
+            <Plus size={14} />
+            <span className="hidden sm:inline">Add Lead</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
 
       {/* Search + Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5">
         <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
           {["unallocated","allocated",""].map((s) => (
             <button key={s || "all"} onClick={() => setFilter("status", s)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${filters.status === s ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-800"}`}>
+              className={`px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors cursor-pointer ${filters.status === s ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-800"}`}>
               {s === "" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
         </div>
-        <div className="relative">
+        <div className="relative flex-1 min-w-[160px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder="Search name, phone, company..." value={filters.search}
             onChange={(e) => setFilter("search", e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white" />
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white" />
         </div>
         <select value={filters.source} onChange={(e) => setFilter("source", e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-700">
+          className="border border-gray-200 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-700">
           <option value="">All Sources</option>
           {SOURCES.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -309,6 +333,11 @@ export default function AllocateLeadsPage() {
           onPageChange={setPage}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
+          columnPicker={{
+            allColumns: ALL_ALLOCATE_COLUMNS,
+            selected: selectedCols,
+            onSelect: setSelectedCols,
+          }}
         />
       </div>
 

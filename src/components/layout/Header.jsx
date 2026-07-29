@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useSidebar } from "./SidebarContext";
-import { ChevronRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { useState } from "react";
+import { useSidebar } from "./SidebarContext";
+import { Menu, LogOut, User } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import ProfileModal from "./ProfileModal";
 
 export default function Header() {
@@ -14,37 +14,40 @@ export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   return (
-    <header className="h-16 bg-white shadow-sm flex items-center justify-between px-2">
-      <div className="flex items-center gap-1">
+    <header className="h-14 sm:h-16 bg-white shadow-sm flex items-center justify-between px-3 sm:px-4 sticky top-0 z-30">
+      {/* Left: hamburger + logo */}
+      <div className="flex items-center gap-2">
         <button
           onClick={() => setOpen(true)}
-          className="p-1 rounded hover:bg-gray-100 text-gray-500 cursor-pointer"
+          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 cursor-pointer transition-colors"
+          aria-label="Open menu"
         >
-          <ChevronRight />
+          <Menu size={20} />
         </button>
 
-        <Link href="/dashboard">
+        <Link href="/dashboard" className="flex items-center">
           <Image
             src="/logo.png"
             alt="Logo"
-            width={180}
-            height={100}
+            width={140}
+            height={80}
             priority
-            className="cursor-pointer"
-            style={{ width: "auto", height: "auto" }}
+            className="cursor-pointer h-8 sm:h-10 w-auto object-contain"
           />
         </Link>
       </div>
-      <div className="flex items-center gap-4">
-        <div 
-          className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors"
+
+      {/* Right: profile + logout */}
+      <div className="flex items-center gap-1 sm:gap-3">
+        {/* Profile — name hidden on very small screens */}
+        <div
+          className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1.5 rounded-lg transition-colors"
           onClick={() => setIsProfileOpen(true)}
         >
-          <span className="text-gray-600 font-medium">
+          <span className="hidden sm:block text-sm text-gray-600 font-medium max-w-[120px] truncate">
             {user?.name || user?.email || "Guest"}
           </span>
-
-          <div className="w-10 h-10 bg-blue-600 text-white flex items-center justify-center rounded-full font-bold overflow-hidden shadow-sm">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 bg-blue-600 text-white flex items-center justify-center rounded-full font-bold overflow-hidden shadow-sm flex-shrink-0 text-sm">
             {user?.profilePic ? (
               <img src={user.profilePic} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -52,31 +55,18 @@ export default function Header() {
             )}
           </div>
         </div>
+
+        {/* Logout */}
         <button
           onClick={logout}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg 
-          bg-red-500 text-white  cursor-pointer font-medium 
-          hover:bg-red-900 hover:text-white 
-          transition duration-200 shadow-sm"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500 text-white cursor-pointer font-medium hover:bg-red-700 transition-colors shadow-sm text-xs sm:text-sm"
+          aria-label="Logout"
         >
-          {/* Icon */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            />
-          </svg>
-          Logout
+          <LogOut size={15} />
+          <span className="hidden sm:inline">Logout</span>
         </button>
       </div>
+
       <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </header>
   );

@@ -32,14 +32,14 @@ const STATUS_CONFIG = {
 
 function KpiCard({ icon: Icon, label, value, color, subtitle }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4">
-      <div className={`p-2.5 rounded-lg ${color}`}>
-        <Icon size={20} />
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 sm:p-5 flex items-start gap-3">
+      <div className={`p-2 sm:p-2.5 rounded-lg ${color}`}>
+        <Icon size={18} />
       </div>
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value ?? "—"}</p>
-        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+        <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider mb-0.5 sm:mb-1">{label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900">{value ?? "—"}</p>
+        {subtitle && <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">{subtitle}</p>}
       </div>
     </div>
   );
@@ -117,26 +117,27 @@ export default function ServicesPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div className="min-h-screen bg-gray-50/50 p-4 sm:p-4" style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="max-w-[1400px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-              <Wrench size={24} className="text-blue-600" />
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+              {/* <Wrench size={24} className="text-blue-600" /> */}
               Services
             </h1>
             <p className="text-sm text-gray-500 mt-1">Track tasks, deadlines, and team progress</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => { fetchServices(); fetchStats(); }} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer">
-              <RefreshCw size={14} />
-              Refresh
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => { fetchServices(); fetchStats(); }} className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-600 text-xs sm:text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer">
+              <RefreshCw size={13} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             {isManager && (
-              <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer">
-                <Plus size={14} />
-                New Service
+              <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm cursor-pointer">
+                <Plus size={13} />
+                <span className="hidden sm:inline">New Service</span>
+                <span className="sm:hidden">New</span>
               </button>
             )}
           </div>
@@ -205,7 +206,41 @@ export default function ServicesPage() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Mobile cards */}
+              <div className="block sm:hidden divide-y divide-gray-100">
+                {services.map((s) => (
+                  <div key={s.id} className="px-4 py-3 cursor-pointer hover:bg-gray-50" onClick={() => router.push(`/services/${s.id}`)}>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 truncate">{s.serviceName}</p>
+                        <p className="text-xs text-gray-500 truncate">{s.clientName}</p>
+                      </div>
+                      <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${PRIORITY_CONFIG[s.priority]?.className || "bg-gray-100 text-gray-600"}`}>
+                          {PRIORITY_CONFIG[s.priority]?.label || s.priority}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${STATUS_CONFIG[s.status]?.className || "bg-gray-100 text-gray-600"}`}>
+                          {STATUS_CONFIG[s.status]?.label || s.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${s.progress || 0}%` }} />
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-500">{s.progress || 0}%</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-gray-400 font-mono">{s.id}</span>
+                      {s.assignedToName && <span className="text-[10px] text-gray-400">· {s.assignedToName}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -255,7 +290,8 @@ export default function ServicesPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
 
           {/* Pagination */}

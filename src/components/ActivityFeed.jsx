@@ -9,6 +9,18 @@ import {
 import api from "@/services/api";
 import DataTable, { OverflowCell } from "@/components/common/DataTable";
 
+// All available columns in the activity log table (default display order)
+const ALL_LOG_COLUMNS = [
+  { key: "member",   label: "Member" },
+  { key: "lead",     label: "Lead" },
+  { key: "status",   label: "Status Change" },
+  { key: "meeting",  label: "Meeting" },
+  { key: "followup", label: "Follow-up" },
+  { key: "remark",   label: "Remark" },
+  { key: "time",     label: "Time" },
+  { key: "details",  label: "Details" },
+];
+
 const STATUS_CONFIG = {
   allocated:      { label: "Allocated",     color: "#3b82f6", bg: "bg-blue-50",    text: "text-blue-700",    border: "border-blue-200" },
   contacted:      { label: "Call Back",     color: "#8b5cf6", bg: "bg-purple-50",  text: "text-purple-700",  border: "border-purple-200" },
@@ -98,8 +110,9 @@ export default function ActivityDashboard() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [page, setPage]       = useState(1);
   const [pageSize, setPageSize] = useState(15);
+  // Column picker: stores keys in selection order (first selected = first column)
+  const [selectedCols, setSelectedCols] = useState(ALL_LOG_COLUMNS.map(c => c.key));
 
-  // Default: today — no date selected shows today
   const [dateFrom, setDateFrom] = useState(todayStr());
   const [dateTo,   setDateTo]   = useState(todayStr());
   const [userId,   setUserId]   = useState("");
@@ -142,7 +155,6 @@ export default function ActivityDashboard() {
 
   useEffect(() => { fetchStats(); fetchLogs(); fetchUsers(); }, [fetchStats, fetchLogs, fetchUsers]);
 
-  // Auto-refresh every 30s
   useEffect(() => {
     const t = setInterval(() => { fetchStats(); fetchLogs(); }, 30000);
     return () => clearInterval(t);
@@ -151,7 +163,6 @@ export default function ActivityDashboard() {
   const resetFilters = () => { setDateFrom(todayStr()); setDateTo(todayStr()); setUserId(""); setPage(1); };
   const isFiltered   = dateFrom !== todayStr() || dateTo !== todayStr() || userId;
 
-  // Donut chart data from logs
   const statusCounts = {};
   logs.forEach(l => {
     const s = l.newData?.status;
@@ -174,8 +185,10 @@ export default function ActivityDashboard() {
 
   const isToday = dateFrom === todayStr() && dateTo === todayStr();
 
-  const columns = [
+  // All column definitions with render functions — keyed by ALL_LOG_COLUMNS keys
+  const ALL_COLUMNS_WITH_RENDER = [
     {
+      key: "member",
       label: "Member",
       render: (log) => (
         <div className="flex items-center gap-2">
@@ -190,6 +203,7 @@ export default function ActivityDashboard() {
       )
     },
     {
+      key: "lead",
       label: "Lead",
       render: (log) => (
         <div>
@@ -199,6 +213,7 @@ export default function ActivityDashboard() {
       )
     },
     {
+      key: "status",
       label: "Status Change",
       render: (log) => {
         const ns = log.newData?.status;
@@ -216,18 +231,19 @@ export default function ActivityDashboard() {
                 {sc.label || ns}
               </span>
             </div>
-          )
+          );
         } else if (ns) {
           return (
             <span className={`px-2 py-0.5 rounded-full text-xs border ${sc.bg} ${sc.text} ${sc.border}`}>
               {sc.label || ns}
             </span>
-          )
+          );
         }
         return <span className="text-gray-300 text-xs">—</span>;
       }
     },
     {
+      key: "meeting",
       label: "Meeting",
       render: (log) => {
         if (log.newData?.meetingDate) {
@@ -240,21 +256,23 @@ export default function ActivityDashboard() {
                 </p>
               )}
             </div>
-          )
+          );
         }
         return <span className="text-gray-300">—</span>;
       }
     },
     {
+      key: "followup",
       label: "Follow-up",
       render: (log) => {
         if (log.newData?.followupDate) {
-          return <span className="text-amber-600 font-medium">{fmtDate(log.newData.followupDate)}</span>
+          return <span className="text-amber-600 font-medium">{fmtDate(log.newData.followupDate)}</span>;
         }
         return <span className="text-gray-300">—</span>;
       }
     },
     {
+      key: "remark",
       label: "Remark",
       render: (log) => {
         const text = log.newData?.followUpNote || log.newData?.notes;
@@ -262,6 +280,7 @@ export default function ActivityDashboard() {
       }
     },
     {
+      key: "time",
       label: "Time",
       render: (log) => (
         <div className="text-xs text-gray-400 whitespace-nowrap">
@@ -271,6 +290,7 @@ export default function ActivityDashboard() {
       )
     },
     {
+      key: "details",
       label: "Details",
       render: (log) => (
         <button onClick={() => setSelectedLog(log)}
@@ -281,13 +301,18 @@ export default function ActivityDashboard() {
     }
   ];
 
+  // Build columns in selectedCols order
+  const columns = selectedCols
+    .map(key => ALL_COLUMNS_WITH_RENDER.find(c => c.key === key))
+    .filter(Boolean);
+
   return (
     <div className="min-h-screen bg-gray-50 p-5 md:p-6">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Activity Dashboard</h1>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Activity Dashboard</h1>
           <p className="text-sm text-gray-400 mt-0.5">
             {isToday ? "Today's activity" : `${fmtDate(dateFrom)} → ${fmtDate(dateTo)}`}
             {" · "}
@@ -459,15 +484,20 @@ export default function ActivityDashboard() {
               <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-lg">{total} records</span>
             </div>
 
-            <DataTable 
-              columns={columns} 
-              data={logs} 
+            <DataTable
+              columns={columns}
+              data={logs}
               loading={loading}
               totalItems={total}
               currentPage={page}
               onPageChange={setPage}
               pageSize={pageSize}
               onPageSizeChange={setPageSize}
+              columnPicker={{
+                allColumns: ALL_LOG_COLUMNS,
+                selected: selectedCols,
+                onSelect: setSelectedCols,
+              }}
             />
           </div>
         </>

@@ -4,18 +4,13 @@ import { useAuth } from "@/context/AuthContext";
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export function useProjects(filters = {}) {
-  const { user } = useAuth();
+  const { user, isManager, isAdmin } = useAuth();
   const token = typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
 
   const [projects, setProjects] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const isManager = user?.department === "management" ||
-    user?.permissions?.users === true ||
-    user?.roleName?.toLowerCase().includes("manager") ||
-    ["Founder & CEO", "Director", "Super Admin"].includes(user?.roleName);
 
   const fetchStats = useCallback(async () => {
     try {

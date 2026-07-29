@@ -13,7 +13,6 @@ export function useProject(id) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Paginated activity
   const [activity, setActivity] = useState([]);
   const [actTotal, setActTotal] = useState(0);
   const [actPage, setActPage] = useState(1);
@@ -25,7 +24,6 @@ export function useProject(id) {
     user?.roleName?.toLowerCase().includes("manager") ||
     ["Founder & CEO", "Director", "Super Admin"].includes(user?.roleName);
 
-  // ── Fetch project ──────────────────────────────────────────────────────────
   const fetchProject = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -44,7 +42,6 @@ export function useProject(id) {
     }
   }, [id, token]);
 
-  // ── Fetch paginated activity ────────────────────────────────────────────────
   const fetchActivity = useCallback(async (page = 1) => {
     if (!id) return;
     try {
@@ -72,7 +69,6 @@ export function useProject(id) {
     fetchActivity(actPage);
   };
 
-  // ── Non-ISI flat checklist toggle ──────────────────────────────────────────
   const toggleChecklistItem = async (itemId) => {
     try {
       const res = await fetch(`${API}/api/projects/${id}/checklist/${itemId}`, {
@@ -86,7 +82,6 @@ export function useProject(id) {
     }
   };
 
-  // ── ISI stage step toggle (with optional date + remark) ───────────────────
   const toggleIsiStep = async (stepId, { dateValue, remark } = {}) => {
     try {
       const res = await fetch(`${API}/api/projects/${id}/stage/${stepId}`, {
@@ -102,7 +97,6 @@ export function useProject(id) {
     }
   };
 
-  // ── Delete project ──────────────────────────────────────────────────────────
   const deleteProject = async () => {
     try {
       const res = await fetch(`${API}/api/projects/${id}`, {
@@ -118,7 +112,6 @@ export function useProject(id) {
     }
   };
 
-  // ── Add remark ─────────────────────────────────────────────────────────────
   const addRemark = async ({ message, stepId, stepLabel }) => {
     if (!message?.trim()) return;
     try {
@@ -135,7 +128,6 @@ export function useProject(id) {
     }
   };
 
-  // ── General comment ────────────────────────────────────────────────────────
   const addComment = async (comment) => {
     try {
       const res = await fetch(`${API}/api/projects/${id}`, {
@@ -151,7 +143,6 @@ export function useProject(id) {
     }
   };
 
-  // ── Update project status ──────────────────────────────────────────────────
   const updateStatus = async (status) => {
     try {
       const res = await fetch(`${API}/api/projects/${id}`, {
@@ -167,14 +158,14 @@ export function useProject(id) {
     }
   };
 
-  // ── Generic document upload (for non-ISI Documents tab) ───────────────────
   const uploadDocument = async (file, onProgress) => {
     if (!file) return;
     try {
-      // Sanitize: remove characters invalid for folder names
       const sanitize = (str = "") => str.replace(/[\/\\:*?"<>|]/g, "").trim() || "Unknown";
+      const serviceType = project?.serviceType ? project.serviceType.toLowerCase().replace(/[\/\\:*?"<>|]/g, "").trim() : "unknown";
+      const moduleFolder = `${serviceType}-projects`;
       const companyFolder = sanitize(project?.clientName);
-      const storagePath = `${companyFolder}/${Date.now()}_${file.name}`;
+      const storagePath = `${moduleFolder}/${companyFolder}/${Date.now()}_${file.name}`;
       const storageRef = ref(storage, storagePath);
       const task = uploadBytesResumable(storageRef, file);
 
@@ -215,13 +206,14 @@ export function useProject(id) {
     }
   };
 
-  // ── Upload ISI doc slot file ───────────────────────────────────────────────
   const uploadIsiDocSlot = async (slotId, file, onProgress) => {
     if (!file) return;
     try {
       const sanitize = (str = "") => str.replace(/[\/\\:*?"<>|]/g, "").trim() || "Unknown";
+      const serviceType = project?.serviceType ? project.serviceType.toLowerCase().replace(/[\/\\:*?"<>|]/g, "").trim() : "unknown";
+      const moduleFolder = `${serviceType}-projects`;
       const companyFolder = sanitize(project?.clientName);
-      const storagePath = `${companyFolder}/${slotId}_${Date.now()}_${file.name}`;
+      const storagePath = `${moduleFolder}/${companyFolder}/${slotId}_${Date.now()}_${file.name}`;
       const storageRef = ref(storage, storagePath);
       const task = uploadBytesResumable(storageRef, file);
 
@@ -270,7 +262,6 @@ export function useProject(id) {
     }
   };
 
-  // ── Remove ISI doc slot file ───────────────────────────────────────────────
   const removeIsiDocSlot = async (slotId) => {
     try {
       const slot = (project.isiDocSlots || []).find((s) => s.id === slotId);
@@ -292,7 +283,6 @@ export function useProject(id) {
     }
   };
 
-  // ── Update ISI doc slot value (text or table rows – no file) ──────────────
   const updateIsiDocSlot = async (slotId, valueOrRows) => {
     try {
       const isiDocSlots = (project.isiDocSlots || []).map((s) =>
@@ -310,7 +300,6 @@ export function useProject(id) {
     }
   };
 
-  // ── Delete generic document ────────────────────────────────────────────────
   const deleteDocument = async (doc) => {
     try {
       if (doc.storagePath) {
@@ -334,13 +323,11 @@ export function useProject(id) {
     loading,
     error,
     isManager,
-    // Activity (paginated)
     activity,
     actTotal,
     actPage,
     ACT_PAGE_SIZE,
     fetchActivity,
-    // Actions
     toggleChecklistItem,
     toggleIsiStep,
     addRemark,

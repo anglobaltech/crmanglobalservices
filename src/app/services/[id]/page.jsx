@@ -168,24 +168,24 @@ export default function ServiceDetailPage({ params }) {
     <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8" style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="max-w-[1200px] mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.push("/services")} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors shadow-sm cursor-pointer">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+            <button onClick={() => router.push("/services")} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors shadow-sm cursor-pointer flex-shrink-0 mt-0.5 sm:mt-0">
               <ArrowLeft size={16} />
             </button>
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-xl font-bold text-gray-900">{service.serviceName}</h1>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${PRIORITY_CONFIG[service.priority]?.className || "bg-gray-100 text-gray-600"}`}>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{service.serviceName}</h1>
+                <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wide flex-shrink-0 ${PRIORITY_CONFIG[service.priority]?.className || "bg-gray-100 text-gray-600"}`}>
                   {PRIORITY_CONFIG[service.priority]?.label || service.priority}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-gray-500">
-                <span className="font-mono text-xs text-blue-600 font-bold">{service.id}</span>
-                <span>•</span>
-                <span>{service.clientName}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 flex-wrap">
+                <span className="font-mono text-[10px] sm:text-xs text-blue-600 font-bold">{service.id}</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="truncate">{service.clientName}</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="flex items-center gap-1 flex-shrink-0">
                   <div className={`w-2 h-2 rounded-full ${statusCfg.color}`} />
                   {statusCfg.label}
                 </span>
@@ -193,19 +193,19 @@ export default function ServiceDetailPage({ params }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {editMode ? (
               <>
-                <button onClick={() => setEditMode(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">Cancel</button>
-                <button onClick={handleSave} disabled={saving} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2">
+                <button onClick={() => setEditMode(false)} className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-center">Cancel</button>
+                <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
                   <Save size={14} />
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving ? "Saving..." : "Save"}
                 </button>
               </>
             ) : (
-              <button onClick={() => setEditMode(true)} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer">
+              <button onClick={() => setEditMode(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer">
                 <Edit2 size={14} />
-                Edit
+                Edit Service
               </button>
             )}
           </div>

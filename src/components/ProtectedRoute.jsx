@@ -4,15 +4,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
-// ROUTE → PERMISSION MAP
 const routePermissions = {
-  "/dashboard": "dashboard",
   "/users": "users",
   "/sales": "sales",
   "/leads": "leads",
   "/allocate-leads": "allocate",
   "/settings": "settings",
   "/services": "services",
+  "/stock": "stock",
 };
 
 export default function ProtectedRoute({ children }) {
@@ -29,10 +28,8 @@ export default function ProtectedRoute({ children }) {
     }
   }, [user, loading, pathname, router]);
 
-  // Still loading — show nothing
   if (loading) return null;
 
-  // Not logged in
   if (!user && !publicRoutes.includes(pathname)) return null;
 
   const matchedRoute = Object.keys(routePermissions).find((route) => {

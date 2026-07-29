@@ -1,4 +1,3 @@
-// Certification service type definitions
 export const SERVICE_TYPES = {
   isi: { label: "ISI", color: "bg-blue-100 text-blue-700 border-blue-200" },
   fmcs: { label: "FMCS", color: "bg-purple-100 text-purple-700 border-purple-200" },
@@ -6,7 +5,6 @@ export const SERVICE_TYPES = {
   bis_crs: { label: "BIS CRS", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 };
 
-// ─── Hallmarking: Stage-based Process (No Test Request stage) ────────────────
 export const HALLMARKING_STAGES = [
   {
     id: "stage_hm_id",
@@ -45,7 +43,6 @@ export const HALLMARKING_STAGES = [
   },
 ];
 
-// ─── Hallmarking: Required Documents (with description and upload slot) ───────
 export const HALLMARKING_REQUIRED_DOCUMENTS = [
   {
     id: "doc_hm_1", label: "GST", type: "file",
@@ -181,7 +178,6 @@ export const HALLMARKING_REQUIRED_DOCUMENTS = [
   },
 ];
 
-// ─── ISI: Required Documents ──────────────────────────────────────────────────
 // type: "file" (default) = upload button
 // type: "text"           = textarea / text input
 // type: "table"          = interactive row table; columns define the table headers
@@ -222,7 +218,6 @@ export const ISI_REQUIRED_DOCUMENTS = [
   { id: "doc_isi_25", label: "Correspondence Address, scale and sector", type: "text", placeholder: "Correspondence Address:\nScale:\nSector:" },
 ];
 
-// ─── ISI: Stage-based Process Checklist ─────────────────────────────────────
 // type: "step" = single toggle, "date" = toggle + date field
 export const ISI_STAGES = [
   {
@@ -272,7 +267,6 @@ export const ISI_STAGES = [
   },
 ];
 
-// ─── BIS CRS: Stage-based Process (same as ISI but WITHOUT Audit stage) ──────
 export const BIS_CRS_STAGES = [
   {
     id: "stage_bis_id",
@@ -311,7 +305,6 @@ export const BIS_CRS_STAGES = [
   },
 ];
 
-// ─── BIS CRS: Required Documents (from checklist → now as upload slots) ───────
 export const BIS_CRS_REQUIRED_DOCUMENTS = [
   { id: "doc_crs_1", label: "Company Email", section: "ID Creation" },
   { id: "doc_crs_2", label: "Domain (For Foreign manufacturer)", section: "ID Creation" },
@@ -330,7 +323,6 @@ export const BIS_CRS_REQUIRED_DOCUMENTS = [
   { id: "doc_crs_15", label: "Authorized Indian representative Govt. ID proof, Contact No., Email ID", section: "AIR & Affidavit" },
 ];
 
-// ─── Other service types (flat checklist, unchanged) ───────────────────────
 export const PROJECT_CHECKLISTS = {
   fmcs: [
     { id: "fmcs_1", label: "Government document addressing factory" },

@@ -29,7 +29,6 @@ export default function UsersPage() {
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  // Modals
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -195,14 +194,14 @@ export default function UsersPage() {
   const inactiveCount = users.length - activeCount;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4">
       {/*  Page Header  */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-xl  font-bold text-gray-900 tracking-tight">
             User Management
           </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
             Manage team members, roles and access
           </p>
         </div>
@@ -211,14 +210,16 @@ export default function UsersPage() {
             setForm(emptyForm);
             setShowCreate(true);
           }}
-          className="flex items-center gap-2 bg-gray-900 hover:bg-gray-700 cursor-pointer  text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+          className="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-700 cursor-pointer text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-colors shadow-sm"
         >
-          <span className="text-lg leading-none ">+</span> Add User
+          <span className="text-base leading-none">+</span>
+          <span className="hidden sm:inline">Add User</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
         {[
           { label: "Total Users", value: users.length, color: "text-gray-900" },
           { label: "Active", value: activeCount, color: "text-emerald-600" },
@@ -226,28 +227,23 @@ export default function UsersPage() {
         ].map((s) => (
           <div
             key={s.label}
-            className="bg-white rounded-xl border border-gray-200 px-5 py-4 shadow-sm"
+            className="bg-white rounded-xl border border-gray-200 px-3 sm:px-5 py-3 sm:py-4 shadow-sm"
           >
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">
+            <p className="text-[10px] sm:text-xs text-gray-400 font-medium uppercase tracking-wider">
               {s.label}
             </p>
-            <p className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
+            <p className={`text-2xl sm:text-3xl font-bold mt-1 ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-5">
-        <div className="relative">
-          {/* <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-            🔍
-          </span> */}
-          <input
-            placeholder="Search name, email, role..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-4 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-          />
-        </div>
+      <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5">
+        <input
+          placeholder="Search name, email, role..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 min-w-[160px] pl-4 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+        />
 
         <select
           value={filterDept}
@@ -291,6 +287,61 @@ export default function UsersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Mobile card list */}
+        <div className="block sm:hidden">
+          {loading ? (
+            <div className="py-12 text-center text-gray-400 text-sm">Loading users…</div>
+          ) : displayed.length === 0 ? (
+            <div className="py-12 text-center text-gray-400">
+              <span className="text-3xl block mb-2">👥</span>
+              <p className="text-sm">No users found</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {displayed.map((u) => {
+                const dc = DEPT_COLORS[u.department];
+                return (
+                  <div key={u.id} className="px-4 py-3 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full ${avatarColor(u.name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                      {u.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 truncate">{u.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        {dc && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${dc.bg} ${dc.text} ${dc.border}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${dc.dot}`} />
+                            <span className="capitalize">{u.department}</span>
+                          </span>
+                        )}
+                        <span className="text-[10px] text-gray-500">{u.roleName || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => toggleStatus(u)}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border cursor-pointer ${
+                          u.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-600 border-red-200"
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? "bg-emerald-500" : "bg-red-400"}`} />
+                        {u.isActive ? "Active" : "Inactive"}
+                      </button>
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(u)} className="p-1 text-gray-400 hover:text-gray-700 cursor-pointer hover:bg-gray-100 rounded transition-colors">✏️</button>
+                        <button onClick={() => openDelete(u)} className="p-1 text-gray-400 hover:text-red-600 cursor-pointer hover:bg-red-100 rounded transition-colors">🗑️</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
@@ -425,6 +476,7 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
+        </div>{/* end hidden sm:block */}
       </div>
 
       <UserModal

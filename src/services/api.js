@@ -25,7 +25,6 @@ export const addCustomer = async (data) => {
   return res.json();
 };
 
-// Add this default export (allocate-leads page uses this) 
 const request = async (method, url, body = null, options = {}) => {
   const params = options.params
     ? "?" + new URLSearchParams(options.params)

@@ -8,7 +8,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Restore session on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem("crm_user");
@@ -20,7 +19,6 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  // Called after login
   const login = (userData) => {
     setUser(userData);
     localStorage.setItem("crm_user", JSON.stringify(userData));
@@ -54,8 +52,27 @@ export function AuthProvider({ children }) {
     } catch {}
   };
 
+  const managerRoles = [
+    "Super Admin",
+    "Founder & CEO",
+    "Director",
+    "Branch Manager",
+    "Manager",
+    "Team Manager",
+    "Assistant Manager",
+  ];
+
+  const adminRoles = [
+    "Super Admin",
+    "Founder & CEO",
+    "Director"
+  ];
+
+  const isManager = user ? managerRoles.includes(user.roleName) : false;
+  const isAdmin = user ? adminRoles.includes(user.roleName) : false;
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, refreshUser, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser, loading, isManager, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

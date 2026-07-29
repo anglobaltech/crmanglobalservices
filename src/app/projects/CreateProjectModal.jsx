@@ -75,10 +75,10 @@ export default function CreateProjectModal({ onClose, onCreated }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+        <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">New Certification Project</h2>
-            <p className="text-sm text-gray-500 mt-1">Fill in the details to start a new project</p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">New Certification Project</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Fill in the details to start a new project</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer">
             <X size={20} />
@@ -86,7 +86,7 @@ export default function CreateProjectModal({ onClose, onCreated }) {
         </div>
         
         {/* Form Body */}
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
           {error && (
             <div className="mb-6 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
@@ -98,10 +98,10 @@ export default function CreateProjectModal({ onClose, onCreated }) {
             {/* Service Type (Full width) */}
             <div className="md:col-span-2">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Service Type</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {Object.entries(SERVICE_TYPES).map(([key, { label }]) => (
                   <button key={key} onClick={() => setForm(f => ({ ...f, serviceType: key }))}
-                    className={`px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all cursor-pointer text-center flex items-center justify-center ${form.serviceType === key ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white"}`}>
+                    className={`px-2 sm:px-4 py-2 sm:py-3 rounded-xl border-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer text-center flex items-center justify-center ${form.serviceType === key ? "border-blue-500 bg-blue-50 text-blue-700 shadow-sm" : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-white"}`}>
                     {label}
                   </button>
                 ))}
@@ -178,12 +178,12 @@ export default function CreateProjectModal({ onClose, onCreated }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-8 py-5 border-t border-gray-100 bg-gray-50/50 rounded-b-3xl mt-auto">
-          <button onClick={onClose} className="px-6 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-xl transition-all cursor-pointer">
+        <div className="flex items-center justify-end gap-2 sm:gap-3 px-4 sm:px-8 py-4 sm:py-5 border-t border-gray-100 bg-gray-50/50 rounded-b-3xl mt-auto">
+          <button onClick={onClose} className="px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-xl transition-all cursor-pointer">
             Cancel
           </button>
           <button onClick={handleSubmit} disabled={saving}
-            className="px-8 py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2">
+            className="px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm hover:shadow transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2">
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

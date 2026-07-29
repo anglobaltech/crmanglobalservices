@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { DEPARTMENTS, MODULES, DEPT_COLORS, MODULE_LABELS } from "@/lib/data/rolesConfig";
-import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal, Wrench, FolderOpen } from "lucide-react";
+import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal, Wrench, FolderOpen, Package } from "lucide-react";
 
 const MODULE_ICONS = {
   dashboard: LayoutDashboard,
@@ -13,6 +13,7 @@ const MODULE_ICONS = {
   settings: Settings,
   services: Wrench,
   projects: FolderOpen,
+  stock: Package,
 };
 
 const MODULE_DESCRIPTIONS = {
@@ -23,6 +24,7 @@ const MODULE_DESCRIPTIONS = {
   settings: "Configure global system preferences",
   services: "Assign and track employee service tasks",
   projects: "Manage ISI, FMCS, Hallmarking & BIS CRS certification projects",
+  stock: "Manage stock gate entries, inventory and dispatch records",
 };
 
 export default function SettingsPage() {
@@ -185,30 +187,30 @@ export default function SettingsPage() {
   const progressPercent = Math.round((enabledCount / MODULES.length) * 100) || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8 font-sans" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-gray-50/50 p-4 font-sans" style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className="max-w-[1400px] mx-auto">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Settings</h1>
-            <p className="text-sm text-gray-500 mt-1">Configure global application preferences</p>
+            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Settings</h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1 hidden sm:block">Configure global application preferences</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={syncAllUsers}
               disabled={isSyncing}
               title="Sync all users' permissions based on their assigned roles."
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-50"
             >
-              <RefreshCw size={14} className={isSyncing ? "animate-spin text-blue-600" : "text-gray-400"} />
-              {isSyncing ? "Syncing..." : "Sync Users"}
+              <RefreshCw size={13} className={isSyncing ? "animate-spin text-blue-600" : "text-gray-400"} />
+              <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync Users"}</span>
             </button>
             <button
               onClick={reseedRoles}
               title="Delete all roles and recreate with default permissions"
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-gray-700 text-sm font-medium rounded-lg transition-colors shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 text-gray-700 text-xs sm:text-sm font-medium rounded-lg transition-colors shadow-sm"
             >
-              <RotateCw size={14} className="text-gray-400 hover:text-red-600" />
-              Re-seed
+              <RotateCw size={13} className="text-gray-400 hover:text-red-600" />
+              <span className="hidden sm:inline">Re-seed</span>
             </button>
           </div>
         </div>

@@ -195,7 +195,7 @@ function TextSlotRow({ slot, idx, updateIsiDocSlot }) {
   return (
     <div className={`border-b border-gray-50 last:border-0 transition ${hasValue ? "bg-emerald-50/20" : "hover:bg-gray-50/30"}`}>
       {/* Header row */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-3">
+      <div className="flex flex-col sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3">
         <span className="text-xs font-bold text-gray-300 w-7 text-right">{String(idx + 1).padStart(2, "0")}</span>
         <div className="flex items-center gap-2">
           <p className="text-sm text-gray-800 font-medium">{slot.label}</p>
@@ -277,7 +277,7 @@ function TableSlotRow({ slot, idx, updateIsiDocSlot }) {
   return (
     <div className={`border-b border-gray-50 last:border-0 transition ${hasRows ? "bg-emerald-50/10" : "hover:bg-gray-50/30"}`}>
       {/* Header row */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-3">
+      <div className="flex flex-col sm:grid sm:grid-cols-[auto_1fr_auto] sm:items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3">
         <span className="text-xs font-bold text-gray-300 w-7 text-right">{String(idx + 1).padStart(2, "0")}</span>
         <div className="flex items-center gap-2">
           <p className="text-sm text-gray-800 font-medium">{slot.label}</p>
@@ -979,13 +979,18 @@ export default function ProjectDetailPage({ params }) {
         )}
 
         {/* ── Tabs ── */}
-        <div className="flex border-b border-gray-200 gap-0 overflow-x-auto bg-white rounded-t-xl">
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <button key={key} onClick={() => setActiveTab(key)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition cursor-pointer whitespace-nowrap flex-shrink-0 ${currentTab === key ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-              <Icon size={13} /> {label}
-            </button>
-          ))}
+        <div className="flex gap-2 border-b border-gray-200 overflow-x-auto no-scrollbar pb-1">
+          {tabs.map(t => {
+            const Icon = t.icon;
+            const isActive = currentTab === t.key;
+            return (
+              <button key={t.key} onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition whitespace-nowrap cursor-pointer ${isActive ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"}`}>
+                <Icon size={14} className={isActive ? "text-blue-600" : "text-gray-400"} />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {currentTab === "stages" && usesStages && (

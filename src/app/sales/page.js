@@ -28,6 +28,7 @@ import {
   Building2,
 } from "lucide-react";
 import api from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 import DataTable, { OverflowCell } from "@/components/common/DataTable";
 
 const STATUS_CONFIG = {
@@ -73,6 +74,19 @@ const STATUS_CONFIG = {
   },
 };
 const ALL_STATUSES = Object.keys(STATUS_CONFIG);
+
+const ALL_SALES_COLUMNS = [
+  { key: "leadId", label: "Lead ID" },
+  { key: "createdAt", label: "Created At" },
+  { key: "name", label: "Name" },
+  { key: "contact", label: "Contact" },
+  { key: "product", label: "Product" },
+  { key: "status", label: "Status" },
+  { key: "followup", label: "Follow-up" },
+  { key: "quotation", label: "Quotation" },
+  { key: "remark", label: "Last Remark" },
+  { key: "action", label: "Action" },
+];
 
 const STAT_CARDS = [
   {
@@ -702,6 +716,7 @@ export default function SalesPage() {
   const [followupLeads, setFollowupLeads] = useState([]);
   const [showFollowup, setShowFollowup] = useState(false);
   const popupShownOnce = useRef(false);
+  const [selectedCols, setSelectedCols] = useState(ALL_SALES_COLUMNS.map(c => c.key));
 
   const [dateFrom, setDateFrom] = useState(todayStr());
   const [dateTo, setDateTo] = useState(todayStr());
@@ -724,23 +739,7 @@ export default function SalesPage() {
   const [updating, setUpdating] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const currentUser = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("crm_user") || "{}");
-    } catch {
-      return {};
-    }
-  })();
-  const managerRoles = [
-    "Super Admin",
-    "Founder & CEO",
-    "Director",
-    "Branch Manager",
-    "Manager",
-    "Team Manager",
-    "Assistant Manager",
-  ];
-  const isManager = managerRoles.includes(currentUser?.roleName);
+  const { user: currentUser, isManager } = useAuth();
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -893,6 +892,7 @@ export default function SalesPage() {
   const columns = [
     {
       label: "Lead ID",
+      key: "leadId",
       render: (lead) => (
         <span className="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
           {lead.leadId || lead.id}
@@ -901,6 +901,7 @@ export default function SalesPage() {
     },
     {
       label: "Created At",
+      key: "createdAt",
       render: (lead) => (
         <span className="text-xs text-gray-400 whitespace-nowrap">
           {fmtDate(lead.createdAt)}
@@ -909,6 +910,7 @@ export default function SalesPage() {
     },
     {
       label: "Name",
+      key: "name",
       render: (lead) => (
         <div className="max-w-[160px]">
           <p className="font-semibold text-gray-900 text-xs truncate" title={lead.name}>
@@ -941,12 +943,11 @@ export default function SalesPage() {
         </div>
       ),
     },
-    // Contact cell — opens shared popup
-    { label: "Contact", render: (lead) => <ContactCell lead={lead} /> },
-    // Product cell — opens the exact same shared popup
-    { label: "Product", render: (lead) => <ProductCell lead={lead} /> },
+    { label: "Contact", key: "contact", render: (lead) => <ContactCell lead={lead} /> },
+    { label: "Product", key: "product", render: (lead) => <ProductCell lead={lead} /> },
     {
       label: "Status",
+      key: "status",
       render: (lead) => {
         const sc = STATUS_CONFIG[lead.status] || STATUS_CONFIG.allocated;
         return (
@@ -961,6 +962,7 @@ export default function SalesPage() {
     },
     {
       label: "Follow-up",
+      key: "followup",
       render: (lead) =>
         lead.followupDate ? (
           <span
@@ -984,6 +986,7 @@ export default function SalesPage() {
     },
     {
       label: "Quotation",
+      key: "quotation",
       render: (lead) => {
         if (lead.quotationShared === true)
           return (
@@ -1012,6 +1015,7 @@ export default function SalesPage() {
     },
     {
       label: "Last Remark",
+      key: "remark",
       render: (lead) =>
         lead.followUpNote ? (
           <OverflowCell value={lead.followUpNote} />
@@ -1023,6 +1027,7 @@ export default function SalesPage() {
     },
     {
       label: "Action",
+      key: "action",
       render: (lead) => (
         <button
           onClick={() => openUpdate(lead)}
@@ -1035,7 +1040,7 @@ export default function SalesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-4">
       {showFollowup && (
         <FollowupPopup
           leads={followupLeads}
@@ -1057,12 +1062,12 @@ export default function SalesPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-xl sm:text-1xl font-bold text-gray-900 tracking-tight">
             Sales Panel
           </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5 hidden sm:block">
             Manage and track your leads
           </p>
         </div>
@@ -1105,25 +1110,26 @@ export default function SalesPage() {
 
       {/* Stat Cards */}
       {viewMode === "my" && (
-        <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
           {STAT_CARDS.map(({ key, label, icon: Icon, color, bg }) => (
             <div
               key={key}
               onClick={() => {
                 setStatusFilter(key === "total" ? "all" : key);
+                setDateFrom("");
+                setDateTo("");
+                setSearch("");
                 setPage(1);
               }}
-              className={`bg-white rounded-xl border px-3 py-2.5 shadow-sm cursor-pointer transition-all hover:shadow-md ${statusFilter === key || (key === "total" && statusFilter === "all") ? "border-gray-900 ring-1 ring-gray-900" : "border-gray-200 hover:border-gray-300"}`}
+              className={`bg-white rounded-xl border px-2 sm:px-3 py-2 sm:py-2.5 shadow-sm cursor-pointer transition-all hover:shadow-md ${statusFilter === key || (key === "total" && statusFilter === "all") ? "border-gray-900 ring-1 ring-gray-900" : "border-gray-200 hover:border-gray-300"}`}
             >
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-gray-400 leading-tight">{label}</p>
-                <div
-                  className={`w-5 h-5 rounded-md ${bg} flex items-center justify-center`}
-                >
-                  <Icon size={11} className={color} />
+              <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                <p className="text-[9px] sm:text-xs text-gray-400 leading-tight truncate">{label}</p>
+                <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-md ${bg} flex items-center justify-center flex-shrink-0`}>
+                  <Icon size={9} className={color} />
                 </div>
               </div>
-              <p className={`text-xl font-bold ${color}`}>{stats[key] || 0}</p>
+              <p className={`text-base sm:text-xl font-bold ${color}`}>{stats[key] || 0}</p>
             </div>
           ))}
         </div>
@@ -1131,8 +1137,8 @@ export default function SalesPage() {
 
       {/* Date + Search */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-          <Calendar size={13} className="text-gray-400 flex-shrink-0" />
+        <div className="flex items-center gap-1 sm:gap-2 bg-white border border-gray-200 rounded-lg px-2 sm:px-3 py-2 shadow-sm">
+          <Calendar size={12} className="text-gray-400 flex-shrink-0" />
           <input
             type="date"
             value={dateFrom}
@@ -1140,7 +1146,7 @@ export default function SalesPage() {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="text-xs text-gray-700 focus:outline-none bg-transparent cursor-pointer w-28"
+            className="text-xs text-gray-700 focus:outline-none bg-transparent cursor-pointer w-24 sm:w-28"
           />
           <span className="text-gray-300 text-xs">→</span>
           <input
@@ -1150,10 +1156,10 @@ export default function SalesPage() {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="text-xs text-gray-700 focus:outline-none bg-transparent cursor-pointer w-28"
+            className="text-xs text-gray-700 focus:outline-none bg-transparent cursor-pointer w-24 sm:w-28"
           />
         </div>
-        <div className="relative">
+        <div className="relative flex-1 min-w-[140px]">
           <Search
             size={13}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -1166,7 +1172,7 @@ export default function SalesPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white shadow-sm"
+            className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white shadow-sm"
           />
         </div>
         {isManager && viewMode === "team" && (
@@ -1206,8 +1212,8 @@ export default function SalesPage() {
         </span>
       </div>
 
-      {/* Status Tabs */}
-      <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm flex-wrap mb-5">
+      {/* Status Tabs - scrollable on mobile */}
+      <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm overflow-x-auto scrollbar-none mb-4 sm:mb-5">
         {[
           { key: "all", label: "All" },
           ...ALL_STATUSES.map((s) => ({
@@ -1304,6 +1310,11 @@ export default function SalesPage() {
         onPageChange={setPage}
         pageSize={pageSize}
         onPageSizeChange={setPageSize}
+        columnPicker={{
+          allColumns: ALL_SALES_COLUMNS,
+          selected: selectedCols,
+          onSelect: setSelectedCols,
+        }}
       />
 
       {/* UPDATE MODAL */}
@@ -1312,20 +1323,22 @@ export default function SalesPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-100 max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
               <div>
-                <h2 className="text-base font-bold text-gray-900">
-                  Update Lead
-                </h2>
-                <p className="text-xs text-gray-600 mt-0.5">
+                <p className="text-sm font-semibold text-gray-900 leading-snug">
                   {selectedLead.name}
                   {selectedLead.companyName && (
-                    <span className="text-gray-600">
+                    <span className="text-gray-500 font-normal">
                       {" "}
                       · {selectedLead.companyName}
                     </span>
                   )}
                   {" · "}
-                  {selectedLead.phone} ·{" "}
-                  {selectedLead.leadId || selectedLead.id}
+                  <span className="text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded">
+                    {selectedLead.phone}
+                  </span>
+                  {" · "}
+                  <span className="text-gray-400 font-mono text-[11px]">
+                    {selectedLead.leadId || selectedLead.id}
+                  </span>
                 </p>
               </div>
               <button
@@ -1335,9 +1348,9 @@ export default function SalesPage() {
                 <X size={18} />
               </button>
             </div>
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden">
               {/* LEFT — form */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 border-r border-gray-100">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 border-b sm:border-b-0 sm:border-r border-gray-100">
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
                     Status *
@@ -1575,7 +1588,7 @@ export default function SalesPage() {
                 </div>
               </div>
               {/* RIGHT — history */}
-              <div className="w-72 flex-shrink-0 flex flex-col bg-gray-50/50">
+              <div className="w-full sm:w-72 flex-shrink-0 flex flex-col bg-gray-50/50">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2 flex-shrink-0 bg-white">
                   <History size={13} className="text-gray-400" />
                   <h3 className="text-sm font-semibold text-gray-700">
@@ -1602,7 +1615,7 @@ export default function SalesPage() {
                 disabled={updating || !updateForm.status}
                 className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-700 disabled:opacity-40 rounded-xl text-white text-sm font-medium cursor-pointer"
               >
-                {updating ? "Saving…" : "Save Update"}
+                {updating ? "Saving…" : "Save"}
               </button>
             </div>
           </div>

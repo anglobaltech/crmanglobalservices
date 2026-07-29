@@ -56,52 +56,54 @@ function ProjectCard({ project, onClick }) {
     <div onClick={onClick}
       className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group overflow-hidden ${isDone ? "border-emerald-200 hover:border-emerald-300" : "border-gray-100 hover:border-blue-200"}`}>
       <div className={`h-1 ${isDone ? "bg-emerald-400" : pct === 100 ? "bg-emerald-400" : "bg-blue-500"}`} />
-      <div className="p-3.5">
+      <div className="p-2.5">
         {/* Header */}
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isDone ? "bg-emerald-50" : "bg-blue-50"}`}>
-              {isDone ? <Award size={14} className="text-emerald-600" /> : <FolderOpen size={14} className="text-blue-600" />}
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${isDone ? "bg-emerald-50" : "bg-blue-50"}`}>
+              {isDone ? <Award size={12} className="text-emerald-600" /> : <FolderOpen size={12} className="text-blue-600" />}
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-mono">{project.id}</p>
-              <p className="text-sm font-bold text-gray-900 leading-tight truncate max-w-[140px]">{project.projectName}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-mono leading-none">{project.id}</p>
+              <p className="text-[13px] font-bold text-gray-900 leading-tight truncate">{project.projectName}</p>
             </div>
           </div>
-          <ChevronRight size={14} className="text-gray-300 group-hover:text-blue-500 transition mt-0.5 flex-shrink-0" />
+          <ChevronRight size={12} className="text-gray-300 group-hover:text-blue-500 transition mt-0.5 flex-shrink-0" />
         </div>
 
         {/* Client */}
-        <p className="text-xs text-gray-500 mb-2 flex items-center gap-1 truncate">
-          <Users size={11} className="text-gray-400 flex-shrink-0" />
+        <p className="text-[11px] text-gray-500 mb-1.5 flex items-center gap-1 truncate">
+          <Users size={10} className="text-gray-400 flex-shrink-0" />
           <span className="truncate">{project.clientName}</span>
         </p>
 
         {/* Badges */}
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-1 mb-2">
           <Badge label={typeConfig.label} colorClass={typeConfig.color} />
           <Badge label={statusConfig.label} colorClass={statusConfig.cls} />
-          {isOverdue && <Badge label={<><AlertTriangle size={9} className="mr-0.5 inline" />Overdue</>} colorClass="bg-red-100 text-red-600" />}
+          {isOverdue && <Badge label={<><AlertTriangle size={8} className="mr-0.5 inline" />Overdue</>} colorClass="bg-red-100 text-red-600" />}
         </div>
 
         {/* Progress */}
         {total > 0 && (
-          <ProgressBar
-            progress={pct}
-            label={`${done}/${total} steps`}
-          />
+          <div className="mt-1">
+            <ProgressBar
+              progress={pct}
+              label={`${done}/${total} steps`}
+            />
+          </div>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-50">
-          <div className="flex items-center gap-1 text-[11px] text-gray-400">
-            <Calendar size={11} />
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
+          <div className="flex items-center gap-1 text-[10px] text-gray-400">
+            <Calendar size={10} />
             {formatDate(project.dueDate)}
           </div>
           {project.assignedToNames?.length > 0 && (
-            <div className="flex items-center gap-1 text-[11px] text-gray-500">
-              <Users size={11} />
-              <span className="truncate max-w-[90px]">
+            <div className="flex items-center gap-1 text-[10px] text-gray-500">
+              <Users size={10} />
+              <span className="truncate max-w-[80px]">
                 {project.assignedToNames.slice(0, 2).join(", ")}
                 {project.assignedToNames.length > 2 && ` +${project.assignedToNames.length - 2}`}
               </span>
@@ -180,20 +182,21 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 " style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="max-w-[1400px] mx-auto space-y-4">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <FolderOpen size={20} className="text-blue-600" /> Certification Projects
+              {/* <FolderOpen size={20} className="text-blue-600" /> */}
+               Certification Projects
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">Manage ISI, FMCS, Hallmarking &amp; BIS CRS certification projects</p>
+            <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Manage ISI, FMCS, Hallmarking &amp; BIS CRS certification projects</p>
           </div>
           {isManager && (
             <button onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm cursor-pointer">
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition shadow-sm cursor-pointer w-full sm:w-auto">
               <Plus size={13} /> New Project
             </button>
           )}
@@ -208,10 +211,10 @@ export default function ProjectsPage() {
         </div>
 
         {/* Service Type Tabs */}
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mb-1">
           {[{ key: "", label: "All" }, ...Object.entries(SERVICE_TYPES).map(([k, v]) => ({ key: k, label: v.label }))].map(({ key, label }) => (
             <button key={key} onClick={() => handleFilter("serviceType", key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${filters.serviceType === key ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${filters.serviceType === key ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
               {label}{key && stats?.byType?.[key] !== undefined ? ` (${stats.byType[key]})` : ""}
             </button>
           ))}
@@ -248,10 +251,10 @@ export default function ProjectsPage() {
             {/* Active Projects */}
             {activeProjects.length > 0 && (
               <div>
-                <h2 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <h2 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <TrendingUp size={12} /> Active Projects ({activeProjects.length})
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {activeSlice.map(project => (
                     <ProjectCard key={project.id} project={project}
                       onClick={() => router.push(`/projects/${project.id}`)} />
@@ -269,10 +272,10 @@ export default function ProjectsPage() {
             {/* Completed / Done Projects */}
             {completedProjects.length > 0 && (
               <div>
-                <h2 className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <h2 className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <Award size={12} /> Completed Projects ({completedProjects.length})
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {completedSlice.map(project => (
                     <ProjectCard key={project.id} project={project}
                       onClick={() => router.push(`/projects/${project.id}`)} />
