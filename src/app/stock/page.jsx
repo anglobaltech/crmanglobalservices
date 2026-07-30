@@ -9,7 +9,7 @@ import {
   SlidersHorizontal, ChevronLeft, ChevronRight,
   User, Car, Building2, Hash, Package, ArrowRight,
   Filter, ChevronDown, Scale,
-  FileText, ExternalLink, Eye,
+  FileText, ExternalLink, Eye, Download, Camera, Video,
 } from "lucide-react";
 import api from "@/services/api";
 import DataTable from "@/components/common/DataTable";
@@ -192,7 +192,104 @@ function Pagination({ total, page, pageSize, onChange }) {
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
 
+function MediaLightbox({ item, onClose }) {
+  if (!item) return null;
+  const isVideo = item.isVideo;
+
+  const handleDownload = async () => {
+    try {
+      const resp = await fetch(item.url);
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = item.label.replace(/\s+/g, "_") + (isVideo ? ".mp4" : ".jpg");
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      window.open(item.url, "_blank");
+    }
+  };
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.96)", display: "flex", flexDirection: "column" }}
+      onClick={onClose}
+    >
+      {/* Top bar */}
+      <div
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", flexShrink: 0, background: "rgba(0,0,0,0.6)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <span style={{ color: "white", fontSize: 14, fontWeight: 700 }}>{item.label}</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={handleDownload}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "rgba(255,255,255,0.15)", color: "white", border: "none", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+          >
+            <Download size={13} /> Download
+          </button>
+          <button
+            onClick={onClose}
+            style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%", cursor: "pointer" }}
+          >
+            <X size={15} color="white" />
+          </button>
+        </div>
+      </div>
+      {/* Media — takes all remaining space */}
+      <div
+        style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8 }}
+        onClick={e => e.stopPropagation()}
+      >
+        {isVideo ? (
+          <video
+            src={item.url}
+            controls
+            autoPlay
+            playsInline
+            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 12 }}
+          />
+        ) : (
+          <img
+            src={item.url}
+            alt={item.label}
+            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12, display: "block" }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MediaCard({ label, url, isVideo, onView }) {
+  if (!url) return null;
+  const Icon = isVideo ? Video : Camera;
+  const colorCls = isVideo
+    ? "bg-purple-50 text-purple-600 border-purple-100"
+    : "bg-blue-50 text-blue-600 border-blue-100";
+  const iconBg = isVideo ? "bg-purple-100" : "bg-blue-100";
+
+  return (
+    <div className={`flex items-center gap-3 p-3 rounded-xl border ${colorCls} cursor-default`}>
+      <div className={`w-9 h-9 ${iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+        <Icon size={16} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold text-gray-700 truncate">{label}</p>
+        <p className="text-[10px] text-gray-400">{isVideo ? "Video file" : "Image file"}</p>
+      </div>
+      <button
+        onClick={() => onView({ label, url, isVideo })}
+        className="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex-shrink-0"
+      >
+        <Eye size={11} /> View
+      </button>
+    </div>
+  );
+}
+
 function DetailModal({ entry, type, onClose }) {
+  const [lightbox, setLightbox] = useState(null);
   if (!entry) return null;
   const cfg = {
     gate:  { title: "Gate Entry",  id: entry.gateEntryId,  color: "blue",   Icon: ClipboardList },
@@ -226,65 +323,46 @@ function DetailModal({ entry, type, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center sm:p-4">
-      <div className="bg-gray-50 w-full sm:max-w-xl flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh]">
-        {/* Header */}
-        <div className={`${hdrBg} px-5 py-4 rounded-t-2xl flex-shrink-0`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                <Icon size={16} className="text-white" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-white">{cfg.title}</h2>
-                <p className="text-[11px] text-white/70 font-mono">{cfg.id || "—"}</p>
-              </div>
-            </div>
-            <button onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-xl cursor-pointer transition-colors">
-              <X size={14} className="text-white" />
-            </button>
-          </div>
-        </div>
-        {/* Body */}
-        <div className="overflow-y-auto flex-1 py-3">
-          {type === "gate" && (
-            <>
-              {/* 0 ── Media Evidence ──────────────────────────────── */}
-              {(entry.driverPhoto || entry.gateOpeningVideo || entry.productPhoto || entry.productVideo) && (
-                <div className="mb-4 px-4">
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Media Evidence</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { key: "driverPhoto",      label: "Driver Photo",        isVideo: false },
-                      { key: "gateOpeningVideo",  label: "Gate Opening Video",  isVideo: true  },
-                      { key: "productPhoto",      label: "Product Photo",       isVideo: false },
-                      { key: "productVideo",      label: "Product Video",       isVideo: true  },
-                    ].map(({ key, label, isVideo }) => entry[key] ? (
-                      <div key={key} className="rounded-xl overflow-hidden border border-gray-200 bg-black">
-                        <div className="bg-gray-900 px-2 py-1">
-                          <p className="text-[9px] text-gray-400 font-semibold">{label}</p>
-                        </div>
-                        {isVideo ? (
-                          <video
-                            src={entry[key]}
-                            controls
-                            playsInline
-                            className="w-full max-h-32 object-contain"
-                          />
-                        ) : (
-                          <img
-                            src={entry[key]}
-                            alt={label}
-                            className="w-full max-h-32 object-cover cursor-pointer"
-                            onClick={() => window.open(entry[key], "_blank")}
-                          />
-                        )}
-                      </div>
-                    ) : null)}
-                  </div>
+    <>
+      {/* Lightbox */}
+      {lightbox && <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />}
+
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center sm:p-4">
+        <div className="bg-gray-50 w-full sm:max-w-xl flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh]">
+          {/* Header */}
+          <div className={`${hdrBg} px-5 py-4 rounded-t-2xl flex-shrink-0`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Icon size={16} className="text-white" />
                 </div>
-              )}
+                <div>
+                  <h2 className="text-sm font-bold text-white">{cfg.title}</h2>
+                  <p className="text-[11px] text-white/70 font-mono">{cfg.id || "—"}</p>
+                </div>
+              </div>
+              <button onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-xl cursor-pointer transition-colors">
+                <X size={14} className="text-white" />
+              </button>
+            </div>
+          </div>
+          {/* Body */}
+          <div className="overflow-y-auto flex-1 py-3">
+            {type === "gate" && (
+              <>
+                {/* 0 ── Media Evidence ──────────────────────────────── */}
+                {(entry.driverPhoto || entry.gateOpeningVideo || entry.productPhoto || entry.productVideo) && (
+                  <div className="mb-4 px-4">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Media Evidence</p>
+                    <div className="space-y-2">
+                      <MediaCard label="Driver Photo"       url={entry.driverPhoto}      isVideo={false} onView={setLightbox} />
+                      <MediaCard label="Gate Opening Video" url={entry.gateOpeningVideo} isVideo={true}  onView={setLightbox} />
+                      <MediaCard label="Product Photo"      url={entry.productPhoto}     isVideo={false} onView={setLightbox} />
+                      <MediaCard label="Product Video"      url={entry.productVideo}     isVideo={true}  onView={setLightbox} />
+                    </div>
+                  </div>
+                )}
 
               {/* 1 ── Product Details ──────────────────────────────── */}
               <Sec title="Product Details">
@@ -401,8 +479,18 @@ function DetailModal({ entry, type, onClose }) {
               </Sec>
             </>
           )}
-          {type === "entry" && (
-            <>
+            {type === "entry" && (
+              <>
+                {/* Media Evidence for Stock Entry */}
+                {(entry.rejectedItemPhoto || entry.rejectedItemVideo) && (
+                  <div className="mb-4 px-4">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Rejection Evidence</p>
+                    <div className="space-y-2">
+                      <MediaCard label="Rejected Item Photo" url={entry.rejectedItemPhoto} isVideo={false} onView={setLightbox} />
+                      <MediaCard label="Rejected Item Video" url={entry.rejectedItemVideo} isVideo={true}  onView={setLightbox} />
+                    </div>
+                  </div>
+                )}
               <Sec title="Invoice">
                 <Row label="Invoice No."  value={entry.invoiceNumber} />
                 <Row label="Product"      value={entry.productName} />
@@ -430,8 +518,18 @@ function DetailModal({ entry, type, onClose }) {
               </Sec>
             </>
           )}
-          {type === "exit" && (
-            <>
+            {type === "exit" && (
+              <>
+                {/* Media Evidence for Stock Exit */}
+                {(entry.exitPhoto || entry.exitVideo) && (
+                  <div className="mb-4 px-4">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Exit Evidence</p>
+                    <div className="space-y-2">
+                      <MediaCard label="Exit Photo" url={entry.exitPhoto} isVideo={false} onView={setLightbox} />
+                      <MediaCard label="Exit Video" url={entry.exitVideo} isVideo={true}  onView={setLightbox} />
+                    </div>
+                  </div>
+                )}
               <Sec title="Dispatch">
                 <Row label="Product"     value={entry.productName} />
                 <Row label="Qty"         value={kgStr(entry.qtyDispatched)} />
@@ -455,16 +553,17 @@ function DetailModal({ entry, type, onClose }) {
                 <Row label="Created By" value={entry.createdByName} />
                 <Row label="Remarks"    value={entry.remarks} />
               </Sec>
-            </>
-          )}
-        </div>
-        <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0">
-          <button onClick={onClose}
-            className="w-full sm:w-auto sm:float-right px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors"
-          >Close</button>
+              </>
+            )}
+          </div>
+          <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0">
+            <button onClick={onClose}
+              className="w-full sm:w-auto sm:float-right px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors"
+            >Close</button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
