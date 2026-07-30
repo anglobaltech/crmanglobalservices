@@ -1,7 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
-import { X, ClipboardList, Truck, CheckCircle2, XCircle, Upload, FileText, AlertCircle, Camera, Video, Eye } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, ClipboardList, Truck, CheckCircle2, XCircle, Upload, FileText, AlertCircle, Camera, Video, Eye, Loader2 } from "lucide-react";
 import api from "@/services/api";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 const YesNo = ({ value, onChange }) => (
   <div className="flex gap-2 mt-1">
@@ -54,34 +56,40 @@ const Textarea = (props) => (
   />
 );
 
-async function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
+// Upload file directly to Firebase Storage, return download URL
+async function uploadToFirebase(file, path) {
+  const storageRef = ref(storage, path);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => {
+      const url = await getDownloadURL(storageRef);
+      resolve(url);
+    });
   });
 }
 
-const FileUpload = ({ label, value, onChange, accept, hint, fileName }) => (
+const FileUpload = ({ label, value, onChange, accept, hint, fileName, uploading }) => (
   <div>
     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">{label}</label>
-    <label className="flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-3 py-2.5 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-      <Upload size={12} className="text-gray-400 flex-shrink-0" />
-      <span className={`text-xs truncate ${value ? "text-emerald-600 font-semibold" : "text-gray-500"}`}>
-        {value ? fileName || "✓ File selected" : "Tap to upload"}
+    <label className={`flex items-center gap-2 border border-dashed rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
+      uploading ? "border-blue-300 bg-blue-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+    }`}>
+      {uploading
+        ? <Loader2 size={12} className="text-blue-500 animate-spin flex-shrink-0" />
+        : <Upload size={12} className="text-gray-400 flex-shrink-0" />
+      }
+      <span className={`text-xs truncate ${value ? "text-emerald-600 font-semibold" : uploading ? "text-blue-500" : "text-gray-500"}`}>
+        {uploading ? "Uploading..." : value ? fileName || "✓ Uploaded" : "Tap to upload"}
       </span>
-      <input type="file" accept={accept} capture="environment" className="hidden"
-        onChange={async (e) => {
-          if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]), e.target.files[0].name);
-        }}
+      <input type="file" accept={accept} className="hidden" disabled={uploading}
+        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
       />
     </label>
     {hint && <p className="text-[9px] text-gray-400 mt-0.5">{hint}</p>}
   </div>
 );
 
-const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint }) => {
+const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint, uploading }) => {
   const isVideo = accept?.includes("video");
   const iconBg = isVideo ? "bg-purple-50 text-purple-500" : "bg-blue-50 text-blue-500";
   return (
@@ -104,33 +112,37 @@ const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint }) => {
         <div className="border border-dashed border-gray-200 rounded-xl p-2.5 hover:border-blue-300 bg-white transition-colors">
           <div className="flex items-center gap-2 mb-2">
             <div className={`w-7 h-7 ${iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-              <Icon size={13} />
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} />}
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-bold text-gray-600 leading-tight">{label}</p>
-              {hint && <p className="text-[9px] text-gray-400 leading-tight mt-0.5">{hint}</p>}
+              {hint && <p className="text-[9px] text-gray-400 leading-tight mt-0.5">{uploading ? "Uploading to storage..." : hint}</p>}
             </div>
           </div>
-          <div className="flex gap-2">
-            <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
-              <Camera size={11} className="text-gray-500" />
-              <span className="text-[9px] font-semibold text-gray-600">Camera</span>
-              <input type="file" accept={accept} capture="environment" className="hidden"
-                onChange={async (e) => {
-                  if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
-                }}
-              />
-            </label>
-            <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
-              <Upload size={11} className="text-gray-500" />
-              <span className="text-[9px] font-semibold text-gray-600">Storage</span>
-              <input type="file" accept={accept} className="hidden"
-                onChange={async (e) => {
-                  if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0]));
-                }}
-              />
-            </label>
-          </div>
+          {!uploading && (
+            <div className="flex gap-2">
+              <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                <Camera size={11} className="text-gray-500" />
+                <span className="text-[9px] font-semibold text-gray-600">Camera</span>
+                <input type="file" accept={accept} capture="environment" className="hidden"
+                  onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
+                />
+              </label>
+              <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                <Upload size={11} className="text-gray-500" />
+                <span className="text-[9px] font-semibold text-gray-600">Storage</span>
+                <input type="file" accept={accept} className="hidden"
+                  onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
+                />
+              </label>
+            </div>
+          )}
+          {uploading && (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 size={14} className="animate-spin text-blue-500 mr-2" />
+              <span className="text-[10px] text-blue-500 font-semibold">Uploading to Firebase...</span>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -156,7 +168,10 @@ const AutoFillPill = ({ text }) => (
 export default function GateEntryModal({ onClose, onCreated }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState({});
   const [error, setError] = useState("");
+  // pendingFiles: { key -> File object } — uploaded to Firebase on submit
+  const pendingFiles = useRef({});
 
   const [form, setForm] = useState({
     invoiceDocNumber: "",
@@ -218,10 +233,52 @@ export default function GateEntryModal({ onClose, onCreated }) {
     }));
   }, [form.ewayBillNumber]);
 
+  // When a file is selected for media fields, upload immediately to Firebase
+  const handleMediaChange = async (key, file) => {
+    if (!file) { set(key, null); pendingFiles.current[key] = null; return; }
+    // Show a preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    set(key, previewUrl);
+    pendingFiles.current[key] = file;
+  };
+
+  // COA file upload
+  const handleCoaFile = (file) => {
+    if (!file) { set("coaFile", null); set("coaFileName", ""); pendingFiles.current.coaFile = null; return; }
+    set("coaFileName", file.name);
+    set("coaFile", "pending"); // placeholder
+    pendingFiles.current.coaFile = file;
+  };
+
   const handleSubmit = async () => {
     if (!form.productName) { setError("Product name is required."); return; }
     setSaving(true); setError("");
     try {
+      // Step 1: Upload all pending files to Firebase Storage directly
+      // We need a temp ID first — generate a timestamp-based placeholder
+      const tempId = `GE-TEMP-${Date.now()}`;
+      const folder = `stockmanagement/gateentry/${tempId}`;
+
+      const mediaKeys = ["driverPhoto", "gateOpeningVideo", "productPhoto", "productVideo", "coaFile"];
+      const uploadedUrls = {};
+
+      setUploading({ all: true });
+      await Promise.all(
+        mediaKeys.map(async (key) => {
+          const file = pendingFiles.current[key];
+          if (!file) return;
+          const ext = file.name.split(".").pop();
+          const path = `${folder}/${key}.${ext}`;
+          try {
+            uploadedUrls[key] = await uploadToFirebase(file, path);
+          } catch (e) {
+            console.error(`Failed to upload ${key}:`, e);
+          }
+        })
+      );
+      setUploading({});
+
+      // Step 2: Send only URLs to backend (no base64 data)
       const payload = {
         invoiceDocNumber: form.invoiceFilledNumber || form.invoiceDocNumber || null,
         invoiceDocPresent: form.invoiceDocPresent,
@@ -238,7 +295,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
         itemBatchNumber: form.itemBatchNumber || null,
         coaAvailable: form.coaAvailable,
         coaDetails: form.coaDetails || null,
-        coaFile: form.coaFile || null,
+        coaFile: uploadedUrls.coaFile || null,
         productName: form.productName,
         packagingDetails: form.packagingDetails || null,
         importedBy: form.importedBy === "Others" ? (form.importedByOther || "Others") : (form.importedBy || null),
@@ -251,16 +308,19 @@ export default function GateEntryModal({ onClose, onCreated }) {
         transporterGst: form.transporterGst || null,
         driverName: form.driverName || null,
         driverPhone: form.driverPhone || null,
-        driverPhoto: form.driverPhoto || null,
-        gateOpeningVideo: form.gateOpeningVideo || null,
-        productVideo: form.productVideo || null,
-        productPhoto: form.productPhoto || null,
+        driverPhoto: uploadedUrls.driverPhoto || null,
+        gateOpeningVideo: uploadedUrls.gateOpeningVideo || null,
+        productVideo: uploadedUrls.productVideo || null,
+        productPhoto: uploadedUrls.productPhoto || null,
         remarks: form.remarks || null,
         entryDate: form.entryDate,
       };
       await api.post("/api/stock/gate-entries", payload);
       onCreated?.(); onClose();
-    } catch (err) { setError(err.response?.data?.message || "Failed to save gate entry"); }
+    } catch (err) {
+      setUploading({});
+      setError(err.response?.data?.message || "Failed to save gate entry");
+    }
     setSaving(false);
   };
 
@@ -445,14 +505,12 @@ export default function GateEntryModal({ onClose, onCreated }) {
                   <div className="p-2.5 bg-emerald-50/60 border border-emerald-100 rounded-lg space-y-2.5">
                     <FileUpload
                       label="Upload COA Document"
-                      value={form.coaFile}
+                      value={form.coaFile && form.coaFile !== "pending" ? form.coaFile : (form.coaFile === "pending" ? "pending" : null)}
                       fileName={form.coaFileName}
-                      onChange={(v, name) => {
-                        set("coaFile", v);
-                        set("coaFileName", name);
-                      }}
+                      onChange={handleCoaFile}
                       accept="image/*,application/pdf"
                       hint="Upload COA certificate (image or PDF)"
+                      uploading={false}
                     />
                   </div>
                 )}
@@ -544,33 +602,37 @@ export default function GateEntryModal({ onClose, onCreated }) {
                     label="Photo of Driver"
                     icon={Camera}
                     value={form.driverPhoto}
-                    onChange={v => set("driverPhoto", v)}
+                    onChange={file => handleMediaChange("driverPhoto", file)}
                     accept="image/*"
                     hint="Driver's face photo"
+                    uploading={!!(uploading.all)}
                   />
                   <MediaUpload
                     label="Video of Gate Opening"
                     icon={Video}
                     value={form.gateOpeningVideo}
-                    onChange={v => set("gateOpeningVideo", v)}
+                    onChange={file => handleMediaChange("gateOpeningVideo", file)}
                     accept="video/*"
                     hint="Gate entry recording"
+                    uploading={!!(uploading.all)}
                   />
                   <MediaUpload
                     label="Photo of Product"
                     icon={Camera}
                     value={form.productPhoto}
-                    onChange={v => set("productPhoto", v)}
+                    onChange={file => handleMediaChange("productPhoto", file)}
                     accept="image/*"
                     hint="Product condition photo"
+                    uploading={!!(uploading.all)}
                   />
                   <MediaUpload
                     label="Video of Product"
                     icon={Video}
                     value={form.productVideo}
-                    onChange={v => set("productVideo", v)}
+                    onChange={file => handleMediaChange("productVideo", file)}
                     accept="video/*"
                     hint="Product unboxing/check"
+                    uploading={!!(uploading.all)}
                   />
                 </div>
               </div>
@@ -595,10 +657,10 @@ export default function GateEntryModal({ onClose, onCreated }) {
               Next: Transport Details →
             </button>
           ) : (
-            <button onClick={handleSubmit} disabled={saving}
-              className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-60"
+            <button onClick={handleSubmit} disabled={saving || !!(uploading.all)}
+              className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
             >
-              {saving ? "Saving..." : "Save Gate Entry "}
+              {uploading.all ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : "Save Gate Entry"}
             </button>
           )}
         </div>

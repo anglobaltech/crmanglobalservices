@@ -24,22 +24,36 @@ const Textarea = (props) => (
   />
 );
 
-async function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { Loader2 } from "lucide-react";
+
+// Upload file directly to Firebase Storage, return download URL
+async function uploadToFirebase(file, path) {
+  const storageRef = ref(storage, path);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => {
+      const url = await getDownloadURL(storageRef);
+      resolve(url);
+    });
   });
 }
 
-const FileUpload = ({ label, value, onChange, accept }) => (
+const FileUpload = ({ label, value, onChange, accept, uploading }) => (
   <Field label={label}>
-    <label className="flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-3 py-2.5 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-      <Camera size={12} className="text-gray-400 flex-shrink-0" />
-      <span className="text-xs text-gray-500 truncate">{value ? "✓ File selected" : "Tap to upload"}</span>
-      <input type="file" accept={accept} className="hidden"
-        onChange={async (e) => { if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0])); }}
+    <label className={`flex items-center gap-2 border border-dashed rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
+      uploading ? "border-blue-300 bg-blue-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+    }`}>
+      {uploading
+        ? <Loader2 size={12} className="text-blue-500 animate-spin flex-shrink-0" />
+        : <Camera size={12} className="text-gray-400 flex-shrink-0" />
+      }
+      <span className={`text-xs truncate ${value ? "text-emerald-600 font-semibold" : uploading ? "text-blue-500" : "text-gray-500"}`}>
+        {uploading ? "Uploading..." : value ? "✓ File uploaded" : "Tap to upload"}
+      </span>
+      <input type="file" accept={accept} className="hidden" disabled={uploading}
+        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
       />
     </label>
   </Field>
@@ -65,6 +79,7 @@ const SectionBlock = ({ num, title, children, color = "emerald" }) => {
 
 export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }) {
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
@@ -81,15 +96,57 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const rejected = parseInt(form.rejectedQty) || 0;
 
+  const [pendingFiles, setPendingFiles] = useState({});
+
+  const handleMediaChange = (key, file) => {
+    if (!file) {
+      set(key, null);
+      setPendingFiles(prev => ({ ...prev, [key]: null }));
+      return;
+    }
+    // Set temp preview url for immediate UI feedback
+    set(key, URL.createObjectURL(file));
+    setPendingFiles(prev => ({ ...prev, [key]: file }));
+  };
+
   const handleSubmit = async () => {
     if (!form.invoiceNumber) { setError("Invoice number is required."); return; }
     if (!form.totalBilledQty) { setError("Total billed quantity is required."); return; }
     if (!form.approvedQty)    { setError("Approved quantity is required."); return; }
     setSaving(true); setError("");
+
     try {
-      await api.post("/api/stock/entries", form);
+      const tempId = `SE-TEMP-${Date.now()}`;
+      const folder = `stockmanagement/stockentry/${tempId}`;
+      const uploadedUrls = {};
+
+      setUploading(true);
+      await Promise.all(
+        ["rejectedItemPhoto", "rejectedItemVideo"].map(async (key) => {
+          const file = pendingFiles[key];
+          if (!file) return;
+          const ext = file.name.split(".").pop();
+          try {
+            uploadedUrls[key] = await uploadToFirebase(file, `${folder}/${key}.${ext}`);
+          } catch (e) {
+            console.error(`Failed to upload ${key}`, e);
+          }
+        })
+      );
+      setUploading(false);
+
+      const payload = {
+        ...form,
+        rejectedItemPhoto: uploadedUrls.rejectedItemPhoto || null,
+        rejectedItemVideo: uploadedUrls.rejectedItemVideo || null,
+      };
+
+      await api.post("/api/stock/entries", payload);
       onCreated?.(); onClose();
-    } catch (err) { setError(err.response?.data?.message || "Failed to save stock entry"); }
+    } catch (err) {
+      setUploading(false);
+      setError(err.response?.data?.message || "Failed to save stock entry");
+    }
     setSaving(false);
   };
 
@@ -178,11 +235,24 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
               </p>
               <Field label="Reason for Rejection" required>
                 <Textarea placeholder="Describe why items were rejected..." value={form.rejectionReason} onChange={e => set("rejectionReason", e.target.value)} />
-              </Field>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FileUpload label="Photo of Rejected Items" value={form.rejectedItemPhoto} onChange={v => set("rejectedItemPhoto", v)} accept="image/*" />
-                <FileUpload label="Video of Rejected Items" value={form.rejectedItemVideo} onChange={v => set("rejectedItemVideo", v)} accept="video/*" />
-              </div>
+                {rejected > 0 && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <FileUpload
+                      label="Rejected Photo"
+                      accept="image/*"
+                      value={form.rejectedItemPhoto}
+                      uploading={uploading}
+                      onChange={file => handleMediaChange("rejectedItemPhoto", file)}
+                    />
+                    <FileUpload
+                      label="Rejected Video"
+                      accept="video/*"
+                      value={form.rejectedItemVideo}
+                      uploading={uploading}
+                      onChange={file => handleMediaChange("rejectedItemVideo", file)}
+                    />
+                  </div>
+                )}</Field>
             </div>
           )}
 
@@ -228,12 +298,14 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-4 sm:px-5 py-3 border-t border-gray-100 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
-          <button onClick={handleSubmit} disabled={saving}
-            className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 cursor-pointer disabled:opacity-60"
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-gray-100 flex-shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+            Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={saving || uploading}
+            className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
           >
-            {saving ? "Saving..." : "Save Entry ✓"}
+            {uploading ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : "Save Stock Entry"}
           </button>
         </div>
       </div>

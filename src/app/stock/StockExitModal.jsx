@@ -22,22 +22,36 @@ const Textarea = (props) => (
   />
 );
 
-async function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { Loader2 } from "lucide-react";
+
+// Upload file directly to Firebase Storage, return download URL
+async function uploadToFirebase(file, path) {
+  const storageRef = ref(storage, path);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => {
+      const url = await getDownloadURL(storageRef);
+      resolve(url);
+    });
   });
 }
 
-const FileUpload = ({ label, value, onChange, accept }) => (
+const FileUpload = ({ label, value, onChange, accept, uploading }) => (
   <Field label={label}>
-    <label className="flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-3 py-2.5 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-      <Camera size={12} className="text-gray-400 flex-shrink-0" />
-      <span className="text-xs text-gray-500 truncate">{value ? "✓ File selected" : "Tap to upload"}</span>
-      <input type="file" accept={accept} className="hidden"
-        onChange={async (e) => { if (e.target.files[0]) onChange(await fileToBase64(e.target.files[0])); }}
+    <label className={`flex items-center gap-2 border border-dashed rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
+      uploading ? "border-blue-300 bg-blue-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+    }`}>
+      {uploading
+        ? <Loader2 size={12} className="text-blue-500 animate-spin flex-shrink-0" />
+        : <Camera size={12} className="text-gray-400 flex-shrink-0" />
+      }
+      <span className={`text-xs truncate ${value ? "text-emerald-600 font-semibold" : uploading ? "text-blue-500" : "text-gray-500"}`}>
+        {uploading ? "Uploading..." : value ? "✓ File uploaded" : "Tap to upload"}
+      </span>
+      <input type="file" accept={accept} className="hidden" disabled={uploading}
+        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
       />
     </label>
   </Field>
@@ -63,6 +77,7 @@ const SectionBlock = ({ num, title, children, color = "orange" }) => {
 
 export default function StockExitModal({ onClose, onCreated, gateEntries = [], stockEntries = [] }) {
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
@@ -76,14 +91,55 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
+  const [pendingFiles, setPendingFiles] = useState({});
+
+  const handleMediaChange = (key, file) => {
+    if (!file) {
+      set(key, null);
+      setPendingFiles(prev => ({ ...prev, [key]: null }));
+      return;
+    }
+    set(key, URL.createObjectURL(file));
+    setPendingFiles(prev => ({ ...prev, [key]: file }));
+  };
+
   const handleSubmit = async () => {
     if (!form.productName)    { setError("Product name is required."); return; }
     if (!form.qtyDispatched)  { setError("Dispatch quantity is required."); return; }
     setSaving(true); setError("");
+
     try {
-      await api.post("/api/stock/exits", form);
+      const tempId = `SX-TEMP-${Date.now()}`;
+      const folder = `stockmanagement/stockexit/${tempId}`;
+      const uploadedUrls = {};
+
+      setUploading(true);
+      await Promise.all(
+        ["exitPhoto", "exitVideo"].map(async (key) => {
+          const file = pendingFiles[key];
+          if (!file) return;
+          const ext = file.name.split(".").pop();
+          try {
+            uploadedUrls[key] = await uploadToFirebase(file, `${folder}/${key}.${ext}`);
+          } catch (e) {
+            console.error(`Failed to upload ${key}`, e);
+          }
+        })
+      );
+      setUploading(false);
+
+      const payload = {
+        ...form,
+        exitPhoto: uploadedUrls.exitPhoto || null,
+        exitVideo: uploadedUrls.exitVideo || null,
+      };
+
+      await api.post("/api/stock/exits", payload);
       onCreated?.(); onClose();
-    } catch (err) { setError(err.response?.data?.message || "Failed to save stock exit"); }
+    } catch (err) {
+      setUploading(false);
+      setError(err.response?.data?.message || "Failed to save stock exit");
+    }
     setSaving(false);
   };
 
@@ -189,8 +245,8 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
           {/* Media */}
           <SectionBlock num={4} title="Media Evidence" color="gray">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <FileUpload label="Exit Photo" value={form.exitPhoto} onChange={v => set("exitPhoto", v)} accept="image/*" />
-              <FileUpload label="Exit Video" value={form.exitVideo} onChange={v => set("exitVideo", v)} accept="video/*" />
+                <FileUpload label="Exit Photo" accept="image/*" value={form.exitPhoto} uploading={uploading} onChange={file => handleMediaChange("exitPhoto", file)} />
+                <FileUpload label="Exit Video" accept="video/*" value={form.exitVideo} uploading={uploading} onChange={file => handleMediaChange("exitVideo", file)} />
             </div>
           </SectionBlock>
 
@@ -202,12 +258,14 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-4 sm:px-5 py-3 border-t border-gray-100 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">Cancel</button>
-          <button onClick={handleSubmit} disabled={saving}
-            className="px-5 py-2 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 cursor-pointer disabled:opacity-60"
+        <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-gray-100 flex-shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors">
+            Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={saving || uploading}
+            className="px-5 py-2 bg-orange-600 text-white text-xs font-semibold rounded-lg hover:bg-orange-700 cursor-pointer disabled:opacity-60 transition-colors flex items-center gap-1.5"
           >
-            {saving ? "Saving..." : "Save Exit ✓"}
+            {uploading ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : "Save Stock Exit"}
           </button>
         </div>
       </div>
