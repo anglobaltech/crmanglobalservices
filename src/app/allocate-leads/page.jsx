@@ -117,7 +117,7 @@ export default function AllocateLeadsPage() {
   const toggleAll = () => selected.size === leads.length ? setSelected(new Set()) : setSelected(new Set(leads.map((l) => l.id)));
 
   const doAssign = async () => {
-    if (!assignUser) return showToast("Please select a user", "error");
+    if (!assignUser) return showToast("Select a user", "error");
     const ids = selected.size > 0 ? [...selected] : null;
     try {
       if (ids && ids.length > 1) {

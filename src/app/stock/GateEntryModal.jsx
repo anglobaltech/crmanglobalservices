@@ -465,7 +465,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
                   <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
                     <AlertCircle size={12} className="text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-[10px] text-amber-700 font-medium">
-                      Mismatch detected. Please verify documents before proceeding.
+                      Mismatch detected. Verify documents before proceeding.
                     </p>
                   </div>
                 )}

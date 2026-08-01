@@ -56,6 +56,13 @@ export default function OverviewTab({ onTabChange }) {
 
   useEffect(() => {
     fetchStats();
+    
+    // Auto refresh every 10 minutes
+    const intervalId = setInterval(() => {
+      fetchStats();
+    }, 10 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
   }, [fetchStats]);
 
   return (
@@ -79,17 +86,17 @@ export default function OverviewTab({ onTabChange }) {
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard icon={Users} label="Total Updates" value={loading ? "..." : salesStats.totalUpdates || 0} colorClass="text-gray-700" bgClass="bg-gray-100" />
-            <StatCard icon={CheckCircle2} label="Deals Closed" value={loading ? "..." : salesStats.converted || 0} colorClass="text-green-700" bgClass="bg-green-100" />
-            <StatCard icon={TrendingUp} label="Hot Leads" value={loading ? "..." : salesStats.interested || 0} colorClass="text-emerald-700" bgClass="bg-emerald-100" />
-            <StatCard icon={Clock} label="Follow-Ups Pending" value={loading ? "..." : salesStats.callback || 0} colorClass="text-amber-700" bgClass="bg-amber-100" />
+            {(loading || salesStats.converted > 0) && <StatCard icon={CheckCircle2} label="Deals Closed" value={loading ? "..." : salesStats.converted || 0} colorClass="text-green-700" bgClass="bg-green-100" />}
+            {(loading || salesStats.interested > 0) && <StatCard icon={TrendingUp} label="Interested" value={loading ? "..." : salesStats.interested || 0} colorClass="text-emerald-700" bgClass="bg-emerald-100" />}
+            {(loading || salesStats.callback > 0) && <StatCard icon={Clock} label="Follow-Ups Pending" value={loading ? "..." : salesStats.callback || 0} colorClass="text-amber-700" bgClass="bg-amber-100" />}
             
             {/* Extended metrics for managers/admins */}
             {(isAdmin || isManager) && (
               <>
-                <StatCard icon={PhoneCall} label="Call Backs" value={loading ? "..." : salesStats.contacted || 0} colorClass="text-purple-700" bgClass="bg-purple-100" />
-                <StatCard icon={Video} label="Meetings" value={loading ? "..." : salesStats.meeting || 0} colorClass="text-cyan-700" bgClass="bg-cyan-100" />
-                <StatCard icon={PhoneOutgoing} label="Call Updates" value={loading ? "..." : salesStats.call_update || 0} colorClass="text-blue-700" bgClass="bg-blue-100" />
-                <StatCard icon={XCircle} label="Not Interested" value={loading ? "..." : salesStats.not_interested || 0} colorClass="text-rose-700" bgClass="bg-rose-100" />
+                {(loading || salesStats.contacted > 0) && <StatCard icon={PhoneCall} label="Call Backs" value={loading ? "..." : salesStats.contacted || 0} colorClass="text-purple-700" bgClass="bg-purple-100" />}
+                {(loading || salesStats.meeting > 0) && <StatCard icon={Video} label="Meetings" value={loading ? "..." : salesStats.meeting || 0} colorClass="text-cyan-700" bgClass="bg-cyan-100" />}
+                {(loading || salesStats.call_update > 0) && <StatCard icon={PhoneOutgoing} label="Call Updates" value={loading ? "..." : salesStats.call_update || 0} colorClass="text-blue-700" bgClass="bg-blue-100" />}
+                {(loading || salesStats.not_interested > 0) && <StatCard icon={XCircle} label="Not Interested" value={loading ? "..." : salesStats.not_interested || 0} colorClass="text-rose-700" bgClass="bg-rose-100" />}
               </>
             )}
           </div>

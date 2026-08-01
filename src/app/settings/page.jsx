@@ -446,7 +446,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   {roles.length === 0 ? (
-                    <div className="p-16 text-center text-gray-500 text-sm">No roles found. Please seed roles in the Roles & Permissions tab.</div>
+                    <div className="p-16 text-center text-gray-500 text-sm">No roles found. Seed roles in the Roles & Permissions tab.</div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">

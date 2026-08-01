@@ -18,7 +18,7 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
     if (!email || !password) {
-      return setError("Please enter your email and password");
+      return setError("Enter your email and password");
     }
 
     setLoading(true);

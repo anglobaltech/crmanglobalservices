@@ -163,25 +163,30 @@ export default function ActivityDashboard() {
   const resetFilters = () => { setDateFrom(todayStr()); setDateTo(todayStr()); setUserId(""); setPage(1); };
   const isFiltered   = dateFrom !== todayStr() || dateTo !== todayStr() || userId;
 
-  const statusCounts = {};
-  logs.forEach(l => {
-    const s = l.newData?.status;
-    if (s && STATUS_CONFIG[s]) statusCounts[s] = (statusCounts[s] || 0) + 1;
-  });
-  const chartData  = Object.entries(statusCounts)
-    .map(([k, v]) => ({ label: STATUS_CONFIG[k]?.label || k, value: v, color: STATUS_CONFIG[k]?.color || "#94a3b8" }))
-    .sort((a, b) => b.value - a.value);
-  const chartTotal = chartData.reduce((s, d) => s + d.value, 0);
+  const chartData = [
+    { label: STATUS_CONFIG.contacted?.label || "Call Back", value: stats.contacted || 0, color: STATUS_CONFIG.contacted?.color || "#8b5cf6" },
+    { label: STATUS_CONFIG.interested?.label || "Interested", value: stats.interested || 0, color: STATUS_CONFIG.interested?.color || "#10b981" },
+    { label: STATUS_CONFIG.not_interested?.label || "Not Interested", value: stats.not_interested || 0, color: STATUS_CONFIG.not_interested?.color || "#ef4444" },
+    { label: STATUS_CONFIG.callback?.label || "Follow Up", value: stats.callback || 0, color: STATUS_CONFIG.callback?.color || "#f59e0b" },
+    { label: STATUS_CONFIG.converted?.label || "Deal Done", value: stats.converted || 0, color: STATUS_CONFIG.converted?.color || "#16a34a" },
+    { label: STATUS_CONFIG.meeting?.label || "Meeting", value: stats.meeting || 0, color: STATUS_CONFIG.meeting?.color || "#06b6d4" },
+    { label: STATUS_CONFIG.call_update?.label || "Call Update", value: stats.call_update || 0, color: STATUS_CONFIG.call_update?.color || "#6366f1" },
+  ].filter(d => d.value > 0).sort((a, b) => b.value - a.value);
 
-  // Per-user breakdown from logs
-  const userMap = {};
-  logs.forEach(l => {
-    if (!userMap[l.userName]) userMap[l.userName] = { name: l.userName, role: l.userRole, total: 0, statuses: {} };
-    userMap[l.userName].total++;
-    const s = l.newData?.status;
-    if (s) userMap[l.userName].statuses[s] = (userMap[l.userName].statuses[s] || 0) + 1;
-  });
-  const userRows = Object.values(userMap).sort((a, b) => b.total - a.total);
+  const chartTotal = stats.totalUpdates || 0;
+
+  const userRows = stats.userPerformance || [];
+
+  const STATUS_KEYS = [
+    { key: "contacted", label: "Call Back" },
+    { key: "interested", label: "Interested" },
+    { key: "converted", label: "Deal Done" },
+    { key: "callback", label: "Follow Up" },
+    { key: "not_interested", label: "Not Int." },
+    { key: "meeting", label: "Meeting" },
+    { key: "call_update", label: "Call Update" },
+  ];
+  const activeStatusKeys = STATUS_KEYS.filter(s => (stats[s.key] || 0) > 0);
 
   const isToday = dateFrom === todayStr() && dateTo === todayStr();
 
@@ -439,8 +444,10 @@ export default function ActivityDashboard() {
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-gray-100">
-                        {["Member","Total","Call Back","Interested","Deal Done","Follow Up","Not Int.","Meeting","Call Update"].map(h => (
-                          <th key={h} className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        <th className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Member</th>
+                        <th className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Total</th>
+                        {activeStatusKeys.map(s => (
+                          <th key={s.key} className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{s.label}</th>
                         ))}
                       </tr>
                     </thead>
@@ -456,10 +463,10 @@ export default function ActivityDashboard() {
                             </div>
                           </td>
                           <td className="py-2 px-2 font-bold text-gray-900">{u.total}</td>
-                          {["contacted","interested","converted","callback","not_interested","meeting","call_update"].map(s => (
-                            <td key={s} className="py-2 px-2">
-                              <span className={`text-xs font-medium ${u.statuses[s] ? STATUS_CONFIG[s]?.text : "text-gray-300"}`}>
-                                {u.statuses[s] || 0}
+                          {activeStatusKeys.map(s => (
+                            <td key={s.key} className="py-2 px-2">
+                              <span className={`text-xs font-medium ${u.statuses[s.key] ? STATUS_CONFIG[s.key]?.text : "text-gray-300"}`}>
+                                {u.statuses[s.key] || 0}
                               </span>
                             </td>
                           ))}

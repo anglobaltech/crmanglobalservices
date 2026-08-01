@@ -23,6 +23,7 @@ import {
   Calendar,
   ChevronRight,
   Bell,
+  UserPlus,
   PhoneOutgoing,
   IndianRupee,
   Building2,
@@ -95,6 +96,13 @@ const STAT_CARDS = [
     icon: Users,
     color: "text-gray-900",
     bg: "bg-gray-50",
+  },
+  {
+    key: "allocated",
+    label: "Allocated",
+    icon: UserPlus,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
   },
   {
     key: "contacted",
@@ -572,23 +580,16 @@ function LeadHistoryPanel({ leadId }) {
                   </p>
                 )}
                 {log.newData?.followUpNote && (
-                  <p className="text-xs text-amber-600 mb-0.5 line-clamp-2">
+                  <p className="text-xs text-amber-600 mb-0.5 whitespace-pre-wrap">
                     {log.newData.followUpNote}
                   </p>
                 )}
-                {log.newData?.quotationShared !== undefined && (
+                {log.newData?.quotationShared === true && (
                   <p className="text-xs text-indigo-600 mb-0.5">
-                    Quotation:{" "}
-                    {log.newData.quotationShared ? (
-                      <>
-                        Shared
-                        {log.newData.quotationAmount
-                          ? ` · ₹${Number(log.newData.quotationAmount).toLocaleString("en-IN")}`
-                          : ""}
-                      </>
-                    ) : (
-                      "Not Shared"
-                    )}
+                    Quotation: Shared
+                    {log.newData.quotationAmount
+                      ? ` · ₹${Number(log.newData.quotationAmount).toLocaleString("en-IN")}`
+                      : ""}
                   </p>
                 )}
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -716,6 +717,7 @@ export default function SalesPage() {
   const [followupLeads, setFollowupLeads] = useState([]);
   const [showFollowup, setShowFollowup] = useState(false);
   const popupShownOnce = useRef(false);
+  const remarkRef = useRef(null);
   const [selectedCols, setSelectedCols] = useState(ALL_SALES_COLUMNS.map(c => c.key));
 
   const [dateFrom, setDateFrom] = useState(todayStr());
@@ -737,6 +739,7 @@ export default function SalesPage() {
     quotationAmount: "",
   });
   const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
   const [toast, setToast] = useState(null);
 
   const { user: currentUser, isManager } = useAuth();
@@ -831,10 +834,19 @@ export default function SalesPage() {
   useEffect(() => {
     fetchLeads();
     fetchUsers();
+    
+    // Auto refresh every 10 minutes
+    const intervalId = setInterval(() => {
+      fetchLeads();
+      fetchUsers();
+    }, 10 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
   }, [fetchLeads, fetchUsers]);
 
   const openUpdate = (lead) => {
     setSelectedLead(lead);
+    setUpdateError("");
     setUpdateForm({
       status: lead.status || "allocated",
       notes: lead.notes || "",
@@ -855,6 +867,12 @@ export default function SalesPage() {
 
   const submitUpdate = async () => {
     if (!selectedLead) return;
+    if (!updateForm.followUpNote || !updateForm.followUpNote.trim()) {
+      setUpdateError("Update follow up remark");
+      remarkRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setUpdateError("");
     setUpdating(true);
     try {
       await api.patch(`/api/sales/leads/${selectedLead.id}/status`, {
@@ -1111,14 +1129,11 @@ export default function SalesPage() {
       {/* Stat Cards */}
       {viewMode === "my" && (
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-1.5 sm:gap-2 mb-4 sm:mb-5">
-          {STAT_CARDS.map(({ key, label, icon: Icon, color, bg }) => (
+          {STAT_CARDS.filter(({ key }) => key === "total" || stats[key] > 0).map(({ key, label, icon: Icon, color, bg }) => (
             <div
               key={key}
               onClick={() => {
                 setStatusFilter(key === "total" ? "all" : key);
-                setDateFrom("");
-                setDateTo("");
-                setSearch("");
                 setPage(1);
               }}
               className={`bg-white rounded-xl border px-2 sm:px-3 py-2 sm:py-2.5 shadow-sm cursor-pointer transition-all hover:shadow-md ${statusFilter === key || (key === "total" && statusFilter === "all") ? "border-gray-900 ring-1 ring-gray-900" : "border-gray-200 hover:border-gray-300"}`}
@@ -1230,76 +1245,74 @@ export default function SalesPage() {
             }}
             className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${statusFilter === key ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-800"}`}
           >
-            {label}
+            {label}{" "}
+            {key === "all" && stats?.total > 0
+              ? `(${stats.total})`
+              : key !== "all" && key !== "quotation" && stats?.[key] > 0
+              ? `(${stats[key]})`
+              : ""}
           </button>
         ))}
       </div>
 
       {/* Team Performance */}
-      {viewMode === "team" && Object.keys(teamStats).length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-5 overflow-x-auto">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Team Performance
-          </h3>
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-100">
-                {[
-                  "Member",
-                  "Total",
-                  "Call Back",
-                  "Interested",
-                  "Deal Done",
-                  "Follow Up",
-                  "Not Int.",
-                  "Meeting",
-                  "Call Update",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {Object.entries(teamStats).map(([name, s]) => (
-                <tr key={name} className="hover:bg-gray-50">
-                  <td className="py-2.5 px-2 font-semibold text-gray-800 whitespace-nowrap">
-                    {name}
-                  </td>
-                  <td className="py-2.5 px-2 font-bold text-gray-900">
-                    {s.total}
-                  </td>
-                  <td className="py-2.5 px-2 text-purple-600">
-                    {s.contacted || 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-emerald-600">
-                    {s.interested || 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-green-600 font-bold">
-                    {s.converted || 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-amber-600">
-                    {s.callback || 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-red-500">
-                    {s.not_interested || 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-cyan-600">
-                    {s.meeting || 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-indigo-600">
-                    {s.call_update || 0}
-                  </td>
+      {viewMode === "team" && Object.keys(teamStats).length > 0 && (() => {
+        const STATUS_KEYS = [
+          { key: "allocated", label: "Allocated", colorClass: "text-blue-600" },
+          { key: "contacted", label: "Call Back", colorClass: "text-purple-600" },
+          { key: "interested", label: "Interested", colorClass: "text-emerald-600" },
+          { key: "converted", label: "Deal Done", colorClass: "text-green-600 font-bold" },
+          { key: "callback", label: "Follow Up", colorClass: "text-amber-600" },
+          { key: "not_interested", label: "Not Int.", colorClass: "text-red-500" },
+          { key: "meeting", label: "Meeting", colorClass: "text-cyan-600" },
+          { key: "call_update", label: "Call Update", colorClass: "text-indigo-600" },
+        ];
+        
+        const activeStatusKeys = STATUS_KEYS.filter(s => 
+          Object.values(teamStats).some(userStat => (userStat[s.key] || 0) > 0)
+        );
+
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-5 overflow-x-auto">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              Team Performance
+            </h3>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Member</th>
+                  <th className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Total</th>
+                  {activeStatusKeys.map((s) => (
+                    <th
+                      key={s.key}
+                      className="pb-2 px-2 text-left font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                    >
+                      {s.label}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {Object.entries(teamStats).map(([name, s]) => (
+                  <tr key={name} className="hover:bg-gray-50">
+                    <td className="py-2.5 px-2 font-semibold text-gray-800 whitespace-nowrap">
+                      {name}
+                    </td>
+                    <td className="py-2.5 px-2 font-bold text-gray-900">
+                      {s.total}
+                    </td>
+                    {activeStatusKeys.map((status) => (
+                      <td key={status.key} className={`py-2.5 px-2 ${status.colorClass}`}>
+                        {s[status.key] || 0}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
 
       <DataTable 
         columns={columns} 
@@ -1356,7 +1369,10 @@ export default function SalesPage() {
                     Status *
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {ALL_STATUSES.map((s) => {
+                    {ALL_STATUSES.filter(s => {
+                      if (s === "allocated" && selectedLead.status !== "allocated") return false;
+                      return true;
+                    }).map((s) => {
                       const sc = STATUS_CONFIG[s],
                         active = updateForm.status === s;
                       return (
@@ -1519,21 +1535,30 @@ export default function SalesPage() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                    Remark / Follow-up Note
-                  </label>
+                <div ref={remarkRef}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-gray-500 block">
+                      Remark / Follow-up Note
+                    </label>
+                    {updateError && (
+                      <span className="text-[10px] text-red-600 bg-red-50 border border-red-100 px-2 py-0.5 rounded flex items-center gap-1 animate-pulse">
+                        <AlertCircle size={10} />
+                        {updateError}
+                      </span>
+                    )}
+                  </div>
                   <textarea
                     value={updateForm.followUpNote}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setUpdateForm({
                         ...updateForm,
                         followUpNote: e.target.value,
-                      })
-                    }
+                      });
+                      if (updateError) setUpdateError("");
+                    }}
                     rows={4}
                     placeholder="Add an update note..."
-                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                    className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 resize-none transition-colors ${updateError ? "border-red-300 focus:ring-red-200 bg-red-50" : "border-gray-200 focus:ring-gray-900 bg-white"}`}
                   />
                 </div>
 
@@ -1612,7 +1637,7 @@ export default function SalesPage() {
               </button>
               <button
                 onClick={submitUpdate}
-                disabled={updating || !updateForm.status}
+                disabled={updating || !updateForm.status || updateForm.status === "allocated"}
                 className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-700 disabled:opacity-40 rounded-xl text-white text-sm font-medium cursor-pointer"
               >
                 {updating ? "Saving…" : "Save"}
