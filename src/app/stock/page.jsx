@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, Search, RefreshCw,
   ClipboardList, PackageCheck, Truck,
@@ -44,8 +44,6 @@ const fmtDateFull = (val) => {
 
 const kgStr = (v) => (v != null && v !== "") ? `${Number(v).toLocaleString()} kg` : null;
 
-// ─── Tiny components ──────────────────────────────────────────────────────────
-
 const Tag = ({ children, color = "gray" }) => {
   const styles = {
     green:  "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -79,8 +77,6 @@ const DateChip = ({ val }) => {
   );
 };
 
-// ─── Column config ─────────────────────────────────────────────────────────────
-
 const GATE_COLS = [
   { key: "gateEntryId",            label: "ID" },
   { key: "productName",            label: "Product" },
@@ -112,19 +108,18 @@ const ENTRY_COLS = [
 ];
 
 const EXIT_COLS = [
-  { key: "stockExitId",   label: "ID" },
-  { key: "productName",   label: "Product" },
-  { key: "qtyDispatched", label: "Qty (kg)" },
-  { key: "buyerName",     label: "Buyer" },
-  { key: "vehicleNumber", label: "Vehicle" },
-  { key: "destination",   label: "Destination" },
-  { key: "exitDate",      label: "Date" },
-  { key: "createdByName", label: "By" },
+  { key: "stockExitId",      label: "ID" },
+  { key: "productName",      label: "Product" },
+  { key: "batchNumber",      label: "Batch No." },
+  { key: "qtyDispatched",    label: "Qty (kg)" },
+  { key: "totalValue",       label: "Total Value" },
+  { key: "buyerCompanyName", label: "Company" },
+  { key: "transportMode",    label: "Mode" },
+  { key: "exitDate",         label: "Date" },
+  { key: "createdByName",    label: "By" },
 ];
 
-const initCols = (defs) => defs.map(c => c.key); // all ON by default
-
-// ─── Column cell renderer ─────────────────────────────────────────────────────
+const initCols = (defs) => defs.map(c => c.key); 
 
 const YES_NO_KEYS = new Set(["invoiceDocPresent","ewayBillPresent","fssaiLicenseApplicable","coaAvailable",
   "invoiceMatchesEway","vehicleNumberMatch","productMatchesInvoice","productMatchesEway","transporterReceiptMatch"]);
@@ -149,10 +144,6 @@ function CellValue({ col, entry }) {
   }
   return v ? <span className="text-[11px] text-gray-700">{v}</span> : <span className="text-gray-300 text-[10px]">—</span>;
 }
-
-// ─── Column Picker removed (using shared component) ────────────────────────────
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
 
 function Pagination({ total, page, pageSize, onChange }) {
   const totalPages = Math.ceil(total / pageSize);
@@ -189,8 +180,6 @@ function Pagination({ total, page, pageSize, onChange }) {
     </div>
   );
 }
-
-// ─── Detail Modal ─────────────────────────────────────────────────────────────
 
 function MediaLightbox({ item, onClose }) {
   if (!item) return null;
@@ -310,9 +299,18 @@ function DetailModal({ entry, type, onClose }) {
   };
 
   const Sec = ({ title, children }) => {
-    const hasContent = Array.isArray(children)
-      ? children.some(c => c)
-      : !!children;
+    // Check if children have actual values being passed to them
+    // children could be an array of React elements
+    const hasContent = React.Children.toArray(children).some(child => {
+      if (!child) return false;
+      // If it's our Row component, check if its value prop is truthy (or 0 or false)
+      if (child.props && child.type === Row) {
+        const v = child.props.value;
+        return (v !== null && v !== undefined && v !== "");
+      }
+      return true;
+    });
+    
     if (!hasContent) return null;
     return (
       <div className="mb-4">
@@ -491,12 +489,16 @@ function DetailModal({ entry, type, onClose }) {
                     </div>
                   </div>
                 )}
-              <Sec title="Invoice">
+              <Sec title="Invoice & Details">
                 <Row label="Invoice No."  value={entry.invoiceNumber} />
-                <Row label="Product"      value={entry.productName} />
+                <Row label="Invoice Date" value={entry.invoiceDate} />
                 <Row label="Bill From"    value={entry.billFrom} />
                 <Row label="Bill To"      value={entry.billTo} />
-                <Row label="Gate Ref."    value={entry.gateEntryRef} />
+              </Sec>
+              <Sec title="Product Info">
+                <Row label="Product Name" value={entry.productName} />
+                <Row label="HSN Code"     value={entry.hsnCode} />
+                <Row label="Vehicle No."  value={entry.vehicleNumber} />
               </Sec>
               <Sec title="Quantity">
                 <Row label="Total"    value={kgStr(entry.totalBilledQty)} />
@@ -520,35 +522,48 @@ function DetailModal({ entry, type, onClose }) {
           )}
             {type === "exit" && (
               <>
-                {/* Media Evidence for Stock Exit */}
-                {(entry.exitPhoto || entry.exitVideo) && (
+                {/* Media Evidence for Stock Exit — supports both old (exitPhoto/exitVideo) and new (vehiclePhoto/itemPhoto/itemVideo) field names */}
+                {(entry.vehiclePhoto || entry.itemPhoto || entry.itemVideo || entry.exitPhoto || entry.exitVideo) && (
                   <div className="mb-4 px-4">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Exit Evidence</p>
                     <div className="space-y-2">
-                      <MediaCard label="Exit Photo" url={entry.exitPhoto} isVideo={false} onView={setLightbox} />
-                      <MediaCard label="Exit Video" url={entry.exitVideo} isVideo={true}  onView={setLightbox} />
+                      <MediaCard label="Vehicle Photo" url={entry.vehiclePhoto || entry.exitPhoto} isVideo={false} onView={setLightbox} />
+                      <MediaCard label="Item Photo"    url={entry.itemPhoto}                        isVideo={false} onView={setLightbox} />
+                      <MediaCard label="Item Video"    url={entry.itemVideo || entry.exitVideo}    isVideo={true}  onView={setLightbox} />
                     </div>
                   </div>
                 )}
-              <Sec title="Dispatch">
-                <Row label="Product"     value={entry.productName} />
-                <Row label="Qty"         value={kgStr(entry.qtyDispatched)} />
-                <Row label="Destination" value={entry.destination} />
+              <Sec title="Product Details">
+                <Row label="Product Name" value={entry.productName} />
+                <Row label="Batch No."    value={entry.batchNumber} />
+                <Row label="Qty (kg)"     value={kgStr(entry.qtyDispatched)} />
+                <Row label="Packaging"    value={entry.packagingType} />
+                <Row label="Total Value"  value={entry.totalValue} />
               </Sec>
-              <Sec title="Buyer">
-                <Row label="Name"  value={entry.buyerName} />
-                <Row label="Phone" value={entry.buyerPhone} />
-                <Row label="GST"   value={entry.buyerGst} />
+              <Sec title="Buyer Details">
+                <Row label="Buyer Name"   value={entry.buyerName} />
+                <Row label="Company"      value={entry.buyerCompanyName} />
+                <Row label="Phone"        value={entry.buyerPhone} />
+                <Row label="GSTIN"        value={entry.buyerGst} />
+                <Row label="FSSAI No"     value={entry.buyerFssaiNumber} />
+              </Sec>
+              <Sec title="Invoice & Document">
+                <Row label="Invoice/Doc"  value={entry.invoiceDocNumber} />
+                <Row label="E-Way Bill?"  value={entry.ewayBillApplicable} isYN={true} />
+                {entry.ewayBillApplicable && <Row label="E-Way No" value={entry.ewayBillNumber} />}
               </Sec>
               <Sec title="Transport">
-                <Row label="Vehicle"     value={entry.vehicleNumber} />
-                <Row label="Transporter" value={entry.transporterName} />
-                <Row label="Driver"      value={entry.driverName} />
-                <Row label="Drv. Phone"  value={entry.driverPhone} />
+                <Row label="Mode"         value={entry.transportMode} />
+                {/* Show transporter name when mode is transporter OR when old records have transporterName */}
+                {(entry.transportMode === "transporter" || (!entry.transportMode && entry.transporterName)) && (
+                  <Row label="Transporter"  value={entry.transporterName} />
+                )}
+                <Row label="Vehicle No"   value={entry.vehicleNumber} />
+                <Row label="Driver Name"  value={entry.driverName} />
+                <Row label="Driver Phone" value={entry.driverPhone} />
+                <Row label="Driver ID"    value={entry.driverId} />
               </Sec>
-              <Sec title="References">
-                <Row label="Stock Ref." value={entry.stockEntryRef} />
-                <Row label="Gate Ref."  value={entry.gateEntryRef} />
+              <Sec title="Other">
                 <Row label="Date"       value={fmtDateFull(entry.exitDate)} />
                 <Row label="Created By" value={entry.createdByName} />
                 <Row label="Remarks"    value={entry.remarks} />
@@ -566,8 +581,6 @@ function DetailModal({ entry, type, onClose }) {
     </>
   );
 }
-
-// ─── Mobile Entry Cards ───────────────────────────────────────────────────────
 
 function GateCard({ e, onClick }) {
   const d = fmtDate(e.entryDate);
@@ -697,8 +710,6 @@ function ExitCard({ e, onClick }) {
   );
 }
 
-// ─── KPI Card ─────────────────────────────────────────────────────────────────
-
 function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
   const C = {
     blue:   { bg: "bg-blue-50",    icon: "text-blue-600",    ring: "ring-blue-300",    activeBg: "bg-blue-600"   },
@@ -731,8 +742,6 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
     </button>
   );
 }
-
-// ─── Main Page ─────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 20;
 
@@ -1018,8 +1027,8 @@ export default function StockPage() {
 
       {/* Create Modals */}
       {modal === "gate"  && <GateEntryModal  onClose={() => setModal(null)} onCreated={fetchAll} />}
-      {/* {modal === "entry" && <StockEntryModal onClose={() => setModal(null)} onCreated={fetchAll} gateEntries={gateEntries} />} 
-      {modal === "exit"  && <StockExitModal  onClose={() => setModal(null)} onCreated={fetchAll} gateEntries={gateEntries} stockEntries={stockEntries} />} */}
+      {modal === "entry" && <StockEntryModal onClose={() => setModal(null)} onCreated={fetchAll} gateEntries={gateEntries} />} 
+      {modal === "exit"  && <StockExitModal  onClose={() => setModal(null)} onCreated={fetchAll} gateEntries={gateEntries} stockEntries={stockEntries} />}
 
       {/* Detail Modal */}
       {detailEntry && (

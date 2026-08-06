@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { X, PackageCheck, AlertTriangle, Camera } from "lucide-react";
+import { X, PackageCheck, AlertTriangle, Camera, Video, Upload } from "lucide-react";
 import api from "@/services/api";
 
 const Field = ({ label, children, required }) => (
@@ -40,24 +40,65 @@ async function uploadToFirebase(file, path) {
   });
 }
 
-const FileUpload = ({ label, value, onChange, accept, uploading }) => (
-  <Field label={label}>
-    <label className={`flex items-center gap-2 border border-dashed rounded-lg px-3 py-2.5 cursor-pointer transition-colors ${
-      uploading ? "border-blue-300 bg-blue-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-    }`}>
-      {uploading
-        ? <Loader2 size={12} className="text-blue-500 animate-spin flex-shrink-0" />
-        : <Camera size={12} className="text-gray-400 flex-shrink-0" />
-      }
-      <span className={`text-xs truncate ${value ? "text-emerald-600 font-semibold" : uploading ? "text-blue-500" : "text-gray-500"}`}>
-        {uploading ? "Uploading..." : value ? "✓ File uploaded" : "Tap to upload"}
-      </span>
-      <input type="file" accept={accept} className="hidden" disabled={uploading}
-        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
-      />
-    </label>
-  </Field>
-);
+const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint, uploading }) => {
+  const isVideo = accept?.includes("video");
+  const iconBg = isVideo ? "bg-purple-50 text-purple-500" : "bg-blue-50 text-blue-500";
+  return (
+    <div>
+      {value ? (
+        <div className="relative rounded-xl overflow-hidden border border-gray-200 bg-black shadow-sm">
+          <div className="flex items-center justify-between px-2 py-1 bg-gray-900">
+            <span className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">{label}</span>
+            <button type="button" onClick={() => onChange(null)}
+              className="w-5 h-5 bg-white/10 hover:bg-red-500 rounded-full flex items-center justify-center cursor-pointer transition-colors">
+              <X size={9} className="text-white" />
+            </button>
+          </div>
+          {isVideo
+            ? <video src={value} controls playsInline className="w-full max-h-24 object-contain" />
+            : <img src={value} alt={label} className="w-full max-h-24 object-cover" />
+          }
+        </div>
+      ) : (
+        <div className="border border-dashed border-gray-200 rounded-xl p-2.5 hover:border-blue-300 bg-white transition-colors">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-7 h-7 ${iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} />}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-gray-600 leading-tight">{label}</p>
+              {hint && <p className="text-[9px] text-gray-400 leading-tight mt-0.5">{uploading ? "Uploading to storage..." : hint}</p>}
+            </div>
+          </div>
+          {!uploading && (
+            <div className="flex gap-2">
+              <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                <Camera size={11} className="text-gray-500" />
+                <span className="text-[9px] font-semibold text-gray-600">Camera</span>
+                <input type="file" accept={accept} capture="environment" className="hidden"
+                  onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
+                />
+              </label>
+              <label className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors">
+                <Upload size={11} className="text-gray-500" />
+                <span className="text-[9px] font-semibold text-gray-600">Storage</span>
+                <input type="file" accept={accept} className="hidden"
+                  onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); }}
+                />
+              </label>
+            </div>
+          )}
+          {uploading && (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 size={14} className="animate-spin text-blue-500 mr-2" />
+              <span className="text-[10px] text-blue-500 font-semibold">Uploading to Firebase...</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SectionBlock = ({ num, title, children, color = "emerald" }) => {
   const colors = {
@@ -191,30 +232,19 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
               <Field label="Product Name">
                 <Input placeholder="Product as per invoice" value={form.productName} onChange={e => set("productName", e.target.value)} />
               </Field>
-              {gateEntries.length > 0 && (
-                <Field label="Link Gate Entry">
-                  <select value={form.gateEntryRef} onChange={e => set("gateEntryRef", e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <option value="">— Select gate entry —</option>
-                    {gateEntries.map(ge => (
-                      <option key={ge.id} value={ge.id}>{ge.gateEntryId} — {ge.productName || ge.vehicleNumber || "Entry"}</option>
-                    ))}
-                  </select>
-                </Field>
-              )}
             </div>
           </SectionBlock>
 
           {/* Quantity */}
           <SectionBlock num={2} title="Quantity & Inspection" color="blue">
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              <Field label="Total Billed Qty" required>
+              <Field label="Total Billed Qty (in kg)" required>
                 <Input type="number" min="0" placeholder="0" value={form.totalBilledQty} onChange={e => set("totalBilledQty", e.target.value)} />
               </Field>
-              <Field label="Approved Qty" required>
+              <Field label="Approved Qty (in kg)" required>
                 <Input type="number" min="0" placeholder="0" value={form.approvedQty} onChange={e => set("approvedQty", e.target.value)} />
               </Field>
-              <Field label="Rejected Qty">
+              <Field label="Rejected Qty (in kg)">
                 <Input type="number" min="0" placeholder="0" value={form.rejectedQty} onChange={e => set("rejectedQty", e.target.value)} />
               </Field>
             </div>
@@ -227,32 +257,38 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
             )}
           </SectionBlock>
 
-          {/* Rejection — only when > 0 */}
+          {/* Rejection Details - only when rejected > 0 */}
           {rejected > 0 && (
-            <div className="p-3.5 border border-red-100 bg-red-50 rounded-xl space-y-3">
-              <p className="text-xs font-bold text-red-700 flex items-center gap-1.5">
+            <div className="p-3.5 border border-red-100 bg-red-30 rounded-xl space-y-3">
+              <p className="text-xs font-bold text-red-600 flex items-center gap-1.5">
                 <AlertTriangle size={13} /> Rejection Details
               </p>
-              <Field label="Reason for Rejection" required>
+              <Field label="Reason for Rejection">
                 <Textarea placeholder="Describe why items were rejected..." value={form.rejectionReason} onChange={e => set("rejectionReason", e.target.value)} />
-                {rejected > 0 && (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <FileUpload
-                      label="Rejected Photo"
-                      accept="image/*"
-                      value={form.rejectedItemPhoto}
-                      uploading={uploading}
-                      onChange={file => handleMediaChange("rejectedItemPhoto", file)}
-                    />
-                    <FileUpload
-                      label="Rejected Video"
-                      accept="video/*"
-                      value={form.rejectedItemVideo}
-                      uploading={uploading}
-                      onChange={file => handleMediaChange("rejectedItemVideo", file)}
-                    />
-                  </div>
-                )}</Field>
+              </Field>
+              <div className="border-t border-red-100 pt-3">
+                <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Camera size={11} className="text-red-500" /> Media Evidence
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  <MediaUpload
+                    label="Rejected Item Photo"
+                    icon={Camera}
+                    accept="image/*"
+                    value={form.rejectedItemPhoto}
+                    uploading={uploading}
+                    onChange={file => handleMediaChange("rejectedItemPhoto", file)}
+                  />
+                  <MediaUpload
+                    label="Rejected Item Video"
+                    icon={Video}
+                    accept="video/*"
+                    value={form.rejectedItemVideo}
+                    uploading={uploading}
+                    onChange={file => handleMediaChange("rejectedItemVideo", file)}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
