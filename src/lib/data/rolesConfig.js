@@ -33,6 +33,7 @@ export const MODULE_LABELS = {
   services: "Services",
   projects: "Projects",
   stock: "Stock",
+  employees: "Employees",
 };
 
 export const MODULES = [
@@ -44,20 +45,21 @@ export const MODULES = [
   "services",
   "projects",
   "stock",
+  "employees",
 ];
 
 
 export const DEFAULT_PERMISSIONS = {
-  "Super Admin":       { dashboard: true,  users: true,  sales: true,  allocate: true,  settings: true,  services: true,  projects: true,  stock: true  },
-  "Founder & CEO":     { dashboard: true,  users: true,  sales: true,  allocate: true,  settings: true,  services: true,  projects: true,  stock: true  },
-  "Director":          { dashboard: true,  users: true,  sales: true,  allocate: true,  settings: false, services: true,  projects: true,  stock: true  },
-  "Branch Manager":    { dashboard: true,  users: false, sales: true,  allocate: true,  settings: false, services: false, projects: false, stock: false },
-  "Manager":           { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false },
-  "Team Manager":      { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false },
-  "Assistant Manager": { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false },
-  "Executive":         { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false },
-  "Intern":            { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: false, projects: false, stock: false },
-  "Service Manager":   { dashboard: true,  users: false, sales: false, allocate: true,  settings: false, services: true,  projects: true,  stock: true  },
-  "Senior Executive":  { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: true,  projects: true,  stock: true  },
-  "Support Staff":     { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: true,  projects: true,  stock: true  },
+  "Super Admin":       { dashboard: true,  users: true,  sales: true,  allocate: true,  settings: true,  services: true,  projects: true,  stock: true,  employees: true  },
+  "Founder & CEO":     { dashboard: true,  users: true,  sales: true,  allocate: true,  settings: true,  services: true,  projects: true,  stock: true,  employees: true  },
+  "Director":          { dashboard: true,  users: true,  sales: true,  allocate: true,  settings: false, services: true,  projects: true,  stock: true,  employees: true  },
+  "Branch Manager":    { dashboard: true,  users: false, sales: true,  allocate: true,  settings: false, services: false, projects: false, stock: false, employees: true  },
+  "Manager":           { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false, employees: false },
+  "Team Manager":      { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false, employees: false },
+  "Assistant Manager": { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false, employees: false },
+  "Executive":         { dashboard: true,  users: false, sales: true,  allocate: false, settings: false, services: false, projects: false, stock: false, employees: false },
+  "Intern":            { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: false, projects: false, stock: false, employees: false },
+  "Service Manager":   { dashboard: true,  users: false, sales: false, allocate: true,  settings: false, services: true,  projects: true,  stock: true,  employees: true  },
+  "Senior Executive":  { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: true,  projects: true,  stock: true,  employees: false },
+  "Support Staff":     { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: true,  projects: true,  stock: true,  employees: false },
 };

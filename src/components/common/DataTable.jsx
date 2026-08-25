@@ -53,14 +53,12 @@ export function OverflowCell({ value }) {
   );
 }
 
-/* ── Order-Based Column Picker Modal ───────────────────────────────── */
 function ColumnPickerModal({ allColumns, selected, onSelect, onClose }) {
   const toggle = (key) => {
     if (selected.includes(key)) {
       if (selected.length <= 1) return; // keep at least 1
       onSelect(selected.filter((k) => k !== key));
     } else {
-      // Append to end → preserves click order
       onSelect([...selected, key]);
     }
   };
@@ -93,7 +91,6 @@ function ColumnPickerModal({ allColumns, selected, onSelect, onClose }) {
           </button>
         </div>
 
-        {/* Selected order preview */}
         {selected.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4 p-2.5 bg-gray-50 rounded-xl border border-gray-100 min-h-[40px] shrink-0">
             {selected.map((key, idx) => {
@@ -108,7 +105,6 @@ function ColumnPickerModal({ allColumns, selected, onSelect, onClose }) {
           </div>
         )}
 
-        {/* All columns toggles */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 overflow-y-auto p-1 flex-1 min-h-0 custom-scrollbar">
           {allColumns.map((col) => {
             const on = selected.includes(col.key);
@@ -130,7 +126,6 @@ function ColumnPickerModal({ allColumns, selected, onSelect, onClose }) {
           })}
         </div>
 
-        {/* Actions */}
         <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-100 shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={selectAll} className="text-xs font-bold text-gray-900 hover:text-black cursor-pointer underline underline-offset-4">
@@ -151,7 +146,6 @@ function ColumnPickerModal({ allColumns, selected, onSelect, onClose }) {
   return mounted ? createPortal(modalContent, document.body) : null;
 }
 
-/* ── Column Picker Button ──────────────────────────────────────────── */
 export function ColumnPickerButton({ allColumns, selected, onSelect }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -187,7 +181,6 @@ export function ColumnPickerButton({ allColumns, selected, onSelect }) {
   );
 }
 
-/* ── Main DataTable ────────────────────────────────────────────────── */
 export default function DataTable({
   columns,
   data,
@@ -197,9 +190,7 @@ export default function DataTable({
   onPageChange = null,
   pageSize: controlledPageSize = null,
   onPageSizeChange = null,
-  // Optional column picker: { allColumns: [{key,label}], selected: string[], onSelect: fn }
   columnPicker = null,
-  // Optional selection: { selectedIds: string[], onSelectChange: fn }
   selection = null,
 }) {
   const [sortCol, setSortCol]   = useState(null);
@@ -246,7 +237,6 @@ export default function DataTable({
     setPage(1);
   };
 
-  // If columnPicker provided, filter and reorder columns by selected order
   const visibleColumns = columnPicker
     ? columnPicker.selected
         .map(key => columns.find(c => c.key === key))
@@ -256,7 +246,6 @@ export default function DataTable({
   return (
     <div className="w-full flex flex-col rounded-xl border border-gray-100 shadow-sm bg-white overflow-hidden">
 
-      {/* ── Toolbar (Row Selector & Column Picker) ── */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 z-20 relative">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-gray-600">Rows:</span>
@@ -278,7 +267,6 @@ export default function DataTable({
         )}
       </div>
 
-      {/* ── Scrollable table ── */}
       <div className="w-full overflow-x-auto">
         <div className="max-h-[520px] overflow-y-auto">
           <table className="w-max min-w-full text-sm text-left">
@@ -388,7 +376,6 @@ export default function DataTable({
         </div>
       </div>
 
-      {/* ── Pagination footer ── */}
       {!loading && total > 0 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 flex-wrap gap-3 bg-white">
           <div className="flex items-center gap-3">
@@ -397,7 +384,6 @@ export default function DataTable({
             </span>
           </div>
 
-          {/* Right — page buttons */}
           {totalPages > 1 && (
             <div className="flex items-center gap-1">
               <button

@@ -417,7 +417,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
         </div>
       </div>
 
-      {/* Hallmarking legend */}
       {isHallmarking && (
         <div className="flex flex-wrap items-center gap-2 px-1">
           <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mr-1">Responsibility:</span>
@@ -674,7 +673,6 @@ function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark }) {
         })}
       </div>
 
-      {/* Step toggle modal */}
       {stepModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.5)" }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -876,7 +874,6 @@ export default function ProjectDetailPage({ params }) {
           )}
         </div>
 
-        {/* ── Header Card ── */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className={`h-1 ${progress === 100 ? "bg-emerald-500" : "bg-blue-600"}`} />
           <div className="p-4">
@@ -895,7 +892,6 @@ export default function ProjectDetailPage({ params }) {
                 <p className="text-xs text-gray-500 mt-0.5">{project.clientName}</p>
               </div>
 
-              {/* Contact Info & Status dropdown */}
               <div className="flex flex-col items-end gap-2 flex-shrink-0">
                 {/* Status dropdown */}
                 <div className="relative">
@@ -927,7 +923,6 @@ export default function ProjectDetailPage({ params }) {
               </div>
             </div>
 
-            {/* Progress */}
             <div className="mt-3">
               <ProgressBar
                 progress={progress}
@@ -965,20 +960,18 @@ export default function ProjectDetailPage({ params }) {
           </div>
         </div>
 
-        {/* Completion banner */}
         {project.status === "completed" && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5">
             <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
               <Award size={15} className="text-emerald-600" />
             </div>
             <div>
-              <p className="font-bold text-emerald-800 text-xs">Project Completed! 🎉</p>
+              <p className="font-bold text-emerald-800 text-xs">Project Completed! </     p>
               <p className="text-[11px] text-emerald-600">This project is now in the Completed section.</p>
             </div>
           </div>
         )}
 
-        {/* ── Tabs ── */}
         <div className="flex gap-2 border-b border-gray-200 overflow-x-auto no-scrollbar pb-1">
           {tabs.map(t => {
             const Icon = t.icon;
@@ -1059,7 +1052,6 @@ export default function ProjectDetailPage({ params }) {
           </div>
         )}
 
-        {/* ── Activity ── */}
         {currentTab === "activity" && (
           <div className="space-y-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-3">
@@ -1088,7 +1080,6 @@ export default function ProjectDetailPage({ params }) {
         )}
       </div>
 
-      {/* Toast Notification */}
       {toast && (
         <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${toast.type === "error" ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
           {toast.type === "error" ? <X size={16} /> : <CheckCircle2 size={16} />} 

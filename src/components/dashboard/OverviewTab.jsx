@@ -24,7 +24,7 @@ export default function OverviewTab({ onTabChange }) {
   const [servicesStats, setServicesStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const hasServices = false; // user?.permissions?.services === true;
+  const hasServices = false;
   const hasSales = user?.permissions?.sales === true || user?.permissions?.leads === true || isAdmin || isManager;
   const hasStock = user?.permissions?.stock === true || isAdmin || isManager;
 
@@ -68,7 +68,6 @@ export default function OverviewTab({ onTabChange }) {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       
-      {/* Sales Snapshot */}
       {hasSales && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -90,7 +89,6 @@ export default function OverviewTab({ onTabChange }) {
             {(loading || salesStats.interested > 0) && <StatCard icon={TrendingUp} label="Interested" value={loading ? "..." : salesStats.interested || 0} colorClass="text-emerald-700" bgClass="bg-emerald-100" />}
             {(loading || salesStats.callback > 0) && <StatCard icon={Clock} label="Follow-Ups Pending" value={loading ? "..." : salesStats.callback || 0} colorClass="text-amber-700" bgClass="bg-amber-100" />}
             
-            {/* Extended metrics for managers/admins */}
             {(isAdmin || isManager) && (
               <>
                 {(loading || salesStats.contacted > 0) && <StatCard icon={PhoneCall} label="Call Backs" value={loading ? "..." : salesStats.contacted || 0} colorClass="text-purple-700" bgClass="bg-purple-100" />}
@@ -103,7 +101,6 @@ export default function OverviewTab({ onTabChange }) {
         </div>
       )}
 
-      {/* Services Snapshot */}
       {hasServices && (
         <div>
           <div className="flex items-center justify-between mb-4 mt-8">
@@ -127,10 +124,8 @@ export default function OverviewTab({ onTabChange }) {
         </div>
       )}
 
-      {/* Stock Summary */}
       {hasStock && <StockSummaryCard token={token} />}
       
-      {/* Empty State Fallback */}
       {!hasSales && !hasServices && !hasStock && !loading && (
         <div className="py-20 text-center border border-gray-200 rounded-lg bg-white mt-8">
           <h3 className="text-lg font-bold text-gray-900 mb-2">Welcome to CRM</h3>

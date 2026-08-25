@@ -272,7 +272,6 @@ function LeadDetailsPopup({ lead, onClose }) {
               </div>
             </div>
           )}
-          {/* Product Interest */}
           {lead.productInterest && (
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
               <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
@@ -835,7 +834,6 @@ export default function SalesPage() {
     fetchLeads();
     fetchUsers();
     
-    // Auto refresh every 10 minutes
     const intervalId = setInterval(() => {
       fetchLeads();
       fetchUsers();
@@ -1227,7 +1225,6 @@ export default function SalesPage() {
         </span>
       </div>
 
-      {/* Status Tabs - scrollable on mobile */}
       <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm overflow-x-auto scrollbar-none mb-4 sm:mb-5">
         {[
           { key: "all", label: "All" },
@@ -1255,7 +1252,6 @@ export default function SalesPage() {
         ))}
       </div>
 
-      {/* Team Performance */}
       {viewMode === "team" && Object.keys(teamStats).length > 0 && (() => {
         const STATUS_KEYS = [
           { key: "allocated", label: "Allocated", colorClass: "text-blue-600" },
@@ -1330,7 +1326,6 @@ export default function SalesPage() {
         }}
       />
 
-      {/* UPDATE MODAL */}
       {modal === "update" && selectedLead && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-100 max-h-[92vh] flex flex-col">

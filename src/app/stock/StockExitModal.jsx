@@ -146,18 +146,12 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    // Buyer Details
     buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
-    // Invoice/Document
     invoiceDocNumber: "", ewayBillApplicable: null, ewayBillNumber: "",
-    // Product Details
     productName: "", batchNumber: "", qtyDispatched: "", packagingType: "", totalValue: "",
-    // References & Destination
     destination: "", stockEntryRef: "", gateEntryRef: "",
-    // Transport Mode
     transportMode: "transporter", transporterName: "", vehicleNumber: "", driverName: "", driverPhone: "", driverId: "",
     exitDate: new Date().toISOString().split("T")[0], remarks: "",
-    // Media Evidence
     vehiclePhoto: null, itemPhoto: null, itemVideo: null,
   });
 
@@ -260,7 +254,6 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
             </div>
           </SectionBlock>
 
-          {/* Invoice/Document Details */}
           <SectionBlock num={2} title="Invoice & Document Details" color="emerald">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Invoice / Document No">
@@ -280,7 +273,6 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
             </div>
           </SectionBlock>
 
-          {/* Product Details */}
           <SectionBlock num={3} title="Product Details" color="orange">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Name of Product" required>
@@ -304,7 +296,6 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
             </div>
           </SectionBlock>
 
-          {/* Transport Mode & Details */}
           <SectionBlock num={4} title="Transport Mode & Details" color="purple">
             <div className="mb-3">
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-2">Mode of Transport</p>

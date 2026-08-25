@@ -204,7 +204,6 @@ function MediaLightbox({ item, onClose }) {
       style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.96)", display: "flex", flexDirection: "column" }}
       onClick={onClose}
     >
-      {/* Top bar */}
       <div
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", flexShrink: 0, background: "rgba(0,0,0,0.6)" }}
         onClick={e => e.stopPropagation()}
@@ -225,7 +224,6 @@ function MediaLightbox({ item, onClose }) {
           </button>
         </div>
       </div>
-      {/* Media — takes all remaining space */}
       <div
         style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 8 }}
         onClick={e => e.stopPropagation()}
@@ -299,11 +297,8 @@ function DetailModal({ entry, type, onClose }) {
   };
 
   const Sec = ({ title, children }) => {
-    // Check if children have actual values being passed to them
-    // children could be an array of React elements
     const hasContent = React.Children.toArray(children).some(child => {
       if (!child) return false;
-      // If it's our Row component, check if its value prop is truthy (or 0 or false)
       if (child.props && child.type === Row) {
         const v = child.props.value;
         return (v !== null && v !== undefined && v !== "");
@@ -322,12 +317,10 @@ function DetailModal({ entry, type, onClose }) {
 
   return (
     <>
-      {/* Lightbox */}
       {lightbox && <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />}
 
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center sm:p-4">
         <div className="bg-gray-50 w-full sm:max-w-xl flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh]">
-          {/* Header */}
           <div className={`${hdrBg} px-5 py-4 rounded-t-2xl flex-shrink-0`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -345,11 +338,9 @@ function DetailModal({ entry, type, onClose }) {
               </button>
             </div>
           </div>
-          {/* Body */}
           <div className="overflow-y-auto flex-1 py-3">
             {type === "gate" && (
               <>
-                {/* 0 ── Media Evidence ──────────────────────────────── */}
                 {(entry.driverPhoto || entry.gateOpeningVideo || entry.productPhoto || entry.productVideo) && (
                   <div className="mb-4 px-4">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Media Evidence</p>
@@ -362,7 +353,6 @@ function DetailModal({ entry, type, onClose }) {
                   </div>
                 )}
 
-              {/* 1 ── Product Details ──────────────────────────────── */}
               <Sec title="Product Details">
                 <Row label="Product Name"   value={entry.productName} />
                 <Row label="Packaging"      value={entry.packagingDetails} />
@@ -370,7 +360,6 @@ function DetailModal({ entry, type, onClose }) {
                 <Row label="Imported By"    value={entry.importedByOther || entry.importedBy} />
               </Sec>
 
-              {/* 2 ── Documents ────────────────────────────────────── */}
               <Sec title="Documents">
                 {/* Invoice */}
                 <div className="py-2.5 border-b border-gray-50">
@@ -398,7 +387,6 @@ function DetailModal({ entry, type, onClose }) {
                   )}
                 </div>
 
-                {/* Match checks */}
                 <div className="py-2 border-b border-gray-50 flex items-center justify-between">
                   <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Invoice = E-Way Match</span>
                   <YesNo val={entry.invoiceMatchesEway} />
@@ -443,7 +431,6 @@ function DetailModal({ entry, type, onClose }) {
                   )}
                 </div>
 
-                {/* Product verification */}
                 <div className="py-2 border-b border-gray-50 flex items-center justify-between">
                   <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Product Matches Invoice</span>
                   <YesNo val={entry.productMatchesInvoice} />
@@ -454,7 +441,6 @@ function DetailModal({ entry, type, onClose }) {
                 </div>
               </Sec>
 
-              {/* 3 ── Driver & Transport ────────────────────────────── */}
               <Sec title="Driver & Transport">
                 <Row label="Vehicle No."   value={entry.vehicleNumber} />
                 <Row label="Transporter"   value={entry.transporterName} />
@@ -467,7 +453,6 @@ function DetailModal({ entry, type, onClose }) {
                 <Row label="Driver Phone"  value={entry.driverPhone} />
               </Sec>
 
-              {/* 4 ── Others ───────────────────────────────────────── */}
               <Sec title="Others">
                 <Row label="Seller GST"   value={entry.gstNumberSeller} />
                 <Row label="Buyer GST"    value={entry.gstNumberBuyer} />
@@ -479,7 +464,6 @@ function DetailModal({ entry, type, onClose }) {
           )}
             {type === "entry" && (
               <>
-                {/* Media Evidence for Stock Entry */}
                 {(entry.rejectedItemPhoto || entry.rejectedItemVideo) && (
                   <div className="mb-4 px-4">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Rejection Evidence</p>
@@ -522,7 +506,6 @@ function DetailModal({ entry, type, onClose }) {
           )}
             {type === "exit" && (
               <>
-                {/* Media Evidence for Stock Exit — supports both old (exitPhoto/exitVideo) and new (vehiclePhoto/itemPhoto/itemVideo) field names */}
                 {(entry.vehiclePhoto || entry.itemPhoto || entry.itemVideo || entry.exitPhoto || entry.exitVideo) && (
                   <div className="mb-4 px-4">
                     <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Exit Evidence</p>
@@ -554,7 +537,6 @@ function DetailModal({ entry, type, onClose }) {
               </Sec>
               <Sec title="Transport">
                 <Row label="Mode"         value={entry.transportMode} />
-                {/* Show transporter name when mode is transporter OR when old records have transporterName */}
                 {(entry.transportMode === "transporter" || (!entry.transportMode && entry.transporterName)) && (
                   <Row label="Transporter"  value={entry.transporterName} />
                 )}
@@ -864,7 +846,6 @@ export default function StockPage() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Inter', sans-serif" }}>
 
-      {/* ── Header ── */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-20">
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
           <div>
@@ -872,7 +853,6 @@ export default function StockPage() {
             <p className="text-[10px] text-gray-400 hidden sm:block">Gate entry · Inventory · Dispatch</p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Mobile filter toggle */}
             <button onClick={() => setShowFilters(v => !v)}
               className={`sm:hidden p-2 rounded-xl border text-xs transition-colors cursor-pointer ${
                 showFilters || datesActive ? "border-blue-300 text-blue-600 bg-blue-50" : "border-gray-200 text-gray-500"
@@ -880,7 +860,6 @@ export default function StockPage() {
             >
               <Filter size={14} />
             </button>
-            {/* Desktop date filter */}
             <div className="hidden sm:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
               <Calendar size={12} className="text-gray-400" />
               <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
@@ -899,14 +878,12 @@ export default function StockPage() {
               className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors cursor-pointer">
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             </button>
-            {/* Mobile Add */}
             <button onClick={() => setModal(tab)}
               className={`sm:hidden flex items-center gap-1 px-3 py-2 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer transition-colors`}>
               <Plus size={13} />
             </button>
           </div>
         </div>
-        {/* Mobile date row */}
         {showFilters && (
           <div className="sm:hidden border-t border-gray-100 px-4 py-3">
             <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2.5">
@@ -929,7 +906,6 @@ export default function StockPage() {
 
       <div className="px-3 sm:px-6 py-3 sm:py-5 space-y-3 sm:space-y-5 max-w-7xl mx-auto">
 
-        {/* ── KPI Cards ── */}
         <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <KpiCard icon={ClipboardList} label="Gate Entries"  value={kpiGate}  color="blue"
             active={tab === "gate"}  onClick={() => setTab("gate")} />
@@ -941,7 +917,6 @@ export default function StockPage() {
           <KpiCard icon={AlertTriangle} label="Rejected"      value={`${kpiRej.toLocaleString()} kg`}   color="red"   sub="rejected qty" />
         </div>
 
-        {/* ── Table Panel ── */}
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
 
           {/* Toolbar */}
@@ -1005,7 +980,6 @@ export default function StockPage() {
             )}
           </div>
 
-          {/* Desktop table */}
           <div className="hidden sm:block">
             <DataTable
               columns={dataTableCols}

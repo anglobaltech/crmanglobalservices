@@ -3,8 +3,6 @@ const API = process.env.NEXT_PUBLIC_API_URL;
 const getAuthHeaders = () => {
   const token = localStorage.getItem("crm_token");
 
-  // console.log("TOKEN SENT:", token); 
-
   return {
     "Content-Type": "application/json",
     Authorization: token ? `Bearer ${token}` : "",

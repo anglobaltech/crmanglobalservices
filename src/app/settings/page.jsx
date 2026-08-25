@@ -14,6 +14,7 @@ const MODULE_ICONS = {
   services: Wrench,
   projects: FolderOpen,
   stock: Package,
+  employees: Users,
 };
 
 const MODULE_DESCRIPTIONS = {
@@ -25,6 +26,7 @@ const MODULE_DESCRIPTIONS = {
   services: "Assign and track employee service tasks",
   projects: "Manage ISI, FMCS, Hallmarking & BIS CRS certification projects",
   stock: "Manage stock gate entries, inventory and dispatch records",
+  employees: "Manage employee records, designations and HR information",
 };
 
 export default function SettingsPage() {
@@ -254,17 +256,14 @@ export default function SettingsPage() {
             </nav>
           </div>
 
-          {/* Main Content Area */}
           <div className="flex-1 min-w-0">
             {activeTab === "Roles & Permissions" && (
               <div className="flex flex-col xl:flex-row gap-6 h-full">
                 
-                {/* Roles List Panel */}
                 <div className="w-full xl:w-[320px] flex-shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-[calc(100vh-140px)]">
                   <div className="p-4 border-b border-gray-100 bg-white">
                     <h3 className="text-sm font-bold text-gray-900 mb-4">Roles</h3>
                     
-                    {/* Search */}
                     <div className="relative mb-4">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                       <input 
@@ -276,7 +275,6 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    {/* Segmented Control */}
                     <div className="flex bg-gray-100/80 p-1 rounded-lg">
                       {["all", ...DEPARTMENTS].map(dept => (
                         <button
@@ -366,7 +364,6 @@ export default function SettingsPage() {
                         </div>
                       </div>
 
-                      {/* Feature Cards Grid */}
                       <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
                           {MODULES.map(m => {

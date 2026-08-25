@@ -42,7 +42,6 @@ export default function LoginPage() {
         throw new Error(data.message || "Invalid email or password");
       }
 
-      // Token save
       localStorage.setItem("crm_token", data.token);
 
       login(data.user);
@@ -58,12 +57,9 @@ export default function LoginPage() {
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-white" style={{ fontFamily: "Inter, sans-serif" }}>
       
-      {/* Left Column - Branding (Fixed, No Scroll) */}
       <div className="hidden lg:flex w-[45%] bg-[#0B132B] relative flex-col justify-between p-12">
-        {/* Subtle Background Pattern */}
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}></div>
         
-        {/* Content Top */}
         <div className="relative z-10 flex items-start">
           <div className="w-40 bg-white p-3 rounded-2xl flex items-center justify-center shadow-lg">
             <img src="/logo.png" alt="A N Global Services" className="w-full h-auto object-contain" />
@@ -80,17 +76,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Content Bottom */}
         <div className="relative z-10 flex items-center gap-3 text-blue-300/50 text-sm font-semibold tracking-widest uppercase">
           <div className="w-8 h-px bg-blue-300/30"></div>
           Enterprise Edition
         </div>
       </div>
 
-      {/* Right Column - Login Form (Fixed, No Scroll) */}
       <div className="flex-1 flex flex-col items-center justify-center relative p-6 sm:p-12">
         
-        {/* Mobile Header */}
         <div className="absolute top-8 left-6 sm:left-12 lg:hidden flex items-center gap-3">
           <div className="w-12 h-12 bg-white shadow-sm border border-gray-100 p-2 rounded-lg flex items-center justify-center">
             <img src="/logo.png" alt="Logo" className="max-w-full max-h-full object-contain" />

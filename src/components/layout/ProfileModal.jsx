@@ -98,10 +98,8 @@ export default function ProfileModal({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* Scrollable Body */}
         <div className="px-6 py-6 overflow-y-auto max-h-[calc(100vh-120px)] no-scrollbar">
           
-          {/* Avatar Upload (Centered, Clean) */}
           <div className="flex flex-col items-center justify-center mb-6">
             <div 
               className="relative group cursor-pointer w-20 h-20 rounded-full overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center" 
@@ -145,7 +143,6 @@ export default function ProfileModal({ isOpen, onClose }) {
               </div>
             )}
 
-            {/* Read-only Meta Info */}
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
               <div className="flex items-center gap-2">
                 <ShieldCheck size={16} className="text-gray-500" />

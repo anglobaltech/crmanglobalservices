@@ -212,14 +212,11 @@ export default function ServiceDetailPage({ params }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT: Details & Progress */}
           <div className="lg:col-span-2 space-y-4">
 
-            {/* Access Summary */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Progress & Status</h3>
               <div className="flex flex-col sm:flex-row gap-6">
-                {/* Progress */}
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-gray-700">Completion</span>
@@ -345,9 +342,7 @@ export default function ServiceDetailPage({ params }) {
             </div>
           </div>
 
-          {/* RIGHT: Sidebar info + Timeline */}
           <div className="space-y-4">
-            {/* Deadline Card */}
             <div className={`bg-white rounded-xl border shadow-sm p-5 ${
               daysRemaining !== null && daysRemaining < 0 ? "border-red-200 bg-red-50/30" :
               daysRemaining !== null && daysRemaining <= 2 ? "border-orange-200 bg-orange-50/30" :

@@ -195,7 +195,6 @@ export default function UsersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-3 sm:p-4">
-      {/*  Page Header  */}
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
           <h1 className="text-xl  font-bold text-gray-900 tracking-tight">
@@ -218,7 +217,6 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
         {[
           { label: "Total Users", value: users.length, color: "text-gray-900" },
@@ -287,7 +285,6 @@ export default function UsersPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Mobile card list */}
         <div className="block sm:hidden">
           {loading ? (
             <div className="py-12 text-center text-gray-400 text-sm">Loading users…</div>
@@ -340,7 +337,6 @@ export default function UsersPage() {
           )}
         </div>
 
-        {/* Desktop table */}
         <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -408,7 +404,6 @@ export default function UsersPage() {
                       </div>
                     </td>
 
-                    {/* Department */}
                     <td className="px-5 py-3.5">
                       {dc ? (
                         <span
@@ -476,7 +471,7 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
-        </div>{/* end hidden sm:block */}
+        </div>
       </div>
 
       <UserModal

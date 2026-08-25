@@ -35,7 +35,7 @@ export default function AllocateLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(new Set());
 
-  const [filters, setFilters] = useState({ status: "unallocated", source: "", state: "", productInterest: "", search: "" });
+  const [filters, setFilters] = useState({ status: "unallocated", source: "", state: "", productInterest: "", search: "", assignedTo: "" });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
@@ -188,7 +188,7 @@ export default function AllocateLeadsPage() {
   };
 
   const setFilter = (k, v) => { setFilters((prev) => ({ ...prev, [k]: v })); setPage(1); };
-  const clearFilters = () => { setFilters({ status: "unallocated", source: "", state: "", productInterest: "", search: "" }); setPage(1); };
+  const clearFilters = () => { setFilters({ status: "unallocated", source: "", state: "", productInterest: "", search: "", assignedTo: "" }); setPage(1); };
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== "status").length;
   const totalPages = Math.ceil(total / pageSize);
 
@@ -301,6 +301,11 @@ export default function AllocateLeadsPage() {
           <option value="">All Sources</option>
           {SOURCES.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
+        <select value={filters.assignedTo || ""} onChange={(e) => setFilter("assignedTo", e.target.value)}
+          className="border border-gray-200 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-700">
+          <option value="">All Users</option>
+          {users.map((u) => <option key={u.id || u.uid} value={u.id || u.uid}>{u.name || u.displayName || u.email}</option>)}
+        </select>
         {activeFilterCount > 0 && (
           <button onClick={clearFilters} className="px-3 py-2 text-xs text-gray-500 hover:text-gray-800 cursor-pointer border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors">Clear filters</button>
         )}
@@ -397,7 +402,6 @@ export default function AllocateLeadsPage() {
                 <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
               </div>
-              {/* Company Name — NEW */}
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Company Name</label>
                 <div className="relative">

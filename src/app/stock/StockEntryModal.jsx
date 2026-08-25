@@ -28,7 +28,6 @@ import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Loader2 } from "lucide-react";
 
-// Upload file directly to Firebase Storage, return download URL
 async function uploadToFirebase(file, path) {
   const storageRef = ref(storage, path);
   return new Promise((resolve, reject) => {
@@ -145,7 +144,6 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
       setPendingFiles(prev => ({ ...prev, [key]: null }));
       return;
     }
-    // Set temp preview url for immediate UI feedback
     set(key, URL.createObjectURL(file));
     setPendingFiles(prev => ({ ...prev, [key]: file }));
   };
@@ -214,7 +212,6 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
 
-          {/* Invoice Details */}
           <SectionBlock num={1} title="Invoice Details" color="emerald">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Invoice Number" required>
@@ -257,7 +254,6 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
             )}
           </SectionBlock>
 
-          {/* Rejection Details - only when rejected > 0 */}
           {rejected > 0 && (
             <div className="p-3.5 border border-red-100 bg-red-30 rounded-xl space-y-3">
               <p className="text-xs font-bold text-red-600 flex items-center gap-1.5">

@@ -168,7 +168,6 @@ export default function ProjectsPage() {
   const completedProjects = projects.filter(p => p.status === "completed");
   const overdueProjects   = projects.filter(p => p.dueDate && new Date(p.dueDate) < new Date() && p.status !== "completed");
 
-  // Paginate active
   const activeTotalPages    = Math.ceil(activeProjects.length / PAGE_SIZE);
   const activeSlice         = activeProjects.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE);
 
@@ -189,7 +188,6 @@ export default function ProjectsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              {/* <FolderOpen size={20} className="text-blue-600" /> */}
                Certification Projects
             </h1>
             <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Manage ISI, FMCS, Hallmarking &amp; BIS CRS certification projects</p>
@@ -269,7 +267,6 @@ export default function ProjectsPage() {
               </div>
             )}
 
-            {/* Completed / Done Projects */}
             {completedProjects.length > 0 && (
               <div>
                 <h2 className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">

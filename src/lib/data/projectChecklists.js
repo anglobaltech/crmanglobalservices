@@ -178,9 +178,6 @@ export const HALLMARKING_REQUIRED_DOCUMENTS = [
   },
 ];
 
-// type: "file" (default) = upload button
-// type: "text"           = textarea / text input
-// type: "table"          = interactive row table; columns define the table headers
 export const ISI_REQUIRED_DOCUMENTS = [
   { id: "doc_isi_1", label: "Premises document / Rent Agreement", type: "file" },
   { id: "doc_isi_2", label: "Copy of GST Registration (If Available)", type: "file" },

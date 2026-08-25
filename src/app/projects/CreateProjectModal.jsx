@@ -95,7 +95,6 @@ export default function CreateProjectModal({ onClose, onCreated }) {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-            {/* Service Type (Full width) */}
             <div className="md:col-span-2">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Service Type</label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
@@ -108,7 +107,6 @@ export default function CreateProjectModal({ onClose, onCreated }) {
               </div>
             </div>
 
-            {/* Company Name (Full width) */}
             <div className="md:col-span-2">
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Company Name <span className="text-red-500">*</span></label>
               <input value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))}

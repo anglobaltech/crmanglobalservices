@@ -56,7 +56,6 @@ const Textarea = (props) => (
   />
 );
 
-// Upload file directly to Firebase Storage, return download URL
 async function uploadToFirebase(file, path) {
   const storageRef = ref(storage, path);
   return new Promise((resolve, reject) => {
@@ -157,7 +156,6 @@ const SectionTitle = ({ num, children, badge }) => (
   </p>
 );
 
-// Auto-filled field pill
 const AutoFillPill = ({ text }) => (
   <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full mb-1">
     <FileText size={8} /> Auto-filled from above
@@ -170,7 +168,6 @@ export default function GateEntryModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState({});
   const [error, setError] = useState("");
-  // pendingFiles: { key -> File object } — uploaded to Firebase on submit
   const pendingFiles = useRef({});
 
   const [form, setForm] = useState({
@@ -233,20 +230,17 @@ export default function GateEntryModal({ onClose, onCreated }) {
     }));
   }, [form.ewayBillNumber]);
 
-  // When a file is selected for media fields, upload immediately to Firebase
   const handleMediaChange = async (key, file) => {
     if (!file) { set(key, null); pendingFiles.current[key] = null; return; }
-    // Show a preview immediately
     const previewUrl = URL.createObjectURL(file);
     set(key, previewUrl);
     pendingFiles.current[key] = file;
   };
 
-  // COA file upload
   const handleCoaFile = (file) => {
     if (!file) { set("coaFile", null); set("coaFileName", ""); pendingFiles.current.coaFile = null; return; }
     set("coaFileName", file.name);
-    set("coaFile", "pending"); // placeholder
+    set("coaFile", "pending"); 
     pendingFiles.current.coaFile = file;
   };
 
@@ -254,8 +248,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
     if (!form.productName) { setError("Product name is required."); return; }
     setSaving(true); setError("");
     try {
-      // Step 1: Upload all pending files to Firebase Storage directly
-      // We need a temp ID first — generate a timestamp-based placeholder
+    
       const tempId = `GE-TEMP-${Date.now()}`;
       const folder = `stockmanagement/gateentry/${tempId}`;
 
@@ -278,7 +271,6 @@ export default function GateEntryModal({ onClose, onCreated }) {
       );
       setUploading({});
 
-      // Step 2: Send only URLs to backend (no base64 data)
       const payload = {
         invoiceDocNumber: form.invoiceFilledNumber || form.invoiceDocNumber || null,
         invoiceDocPresent: form.invoiceDocPresent,
@@ -376,7 +368,6 @@ export default function GateEntryModal({ onClose, onCreated }) {
                   <YesNo value={form.invoiceDocPresent} onChange={v => set("invoiceDocPresent", v)} />
                 </div>
 
-                {/* Number input shown only when Present = Yes */}
                 {form.invoiceDocPresent === true && (
                   <div className="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-lg space-y-1.5">
                     <Field label="Invoice / Document Number">
@@ -398,7 +389,6 @@ export default function GateEntryModal({ onClose, onCreated }) {
                   <YesNo value={form.ewayBillPresent} onChange={v => set("ewayBillPresent", v)} />
                 </div>
 
-                {/* Number input shown only when Present = Yes */}
                 {form.ewayBillPresent === true && (
                   <div className="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-lg space-y-1.5">
                     <Field label="E-Way Bill Number">
@@ -460,7 +450,6 @@ export default function GateEntryModal({ onClose, onCreated }) {
                   </div>
                 </div>
 
-                {/* Warning if mismatch */}
                 {(form.invoiceMatchesEway === false || form.vehicleNumberMatch === false) && (
                   <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
                     <AlertCircle size={12} className="text-amber-600 flex-shrink-0 mt-0.5" />
@@ -591,7 +580,6 @@ export default function GateEntryModal({ onClose, onCreated }) {
                 </Field>
               </div>
 
-              {/* Media Evidence — ordered: driver photo → gate video → product photo → product video */}
               <div className="border-t border-gray-100 pt-4">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Camera size={11} className="text-gray-400" /> Media Evidence

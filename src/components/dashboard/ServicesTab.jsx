@@ -85,7 +85,6 @@ export default function ServicesTab() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
 
-      {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={Wrench} label="Total Assigned" value={stats?.total ?? "—"} colorClass="text-blue-700" bgClass="bg-blue-100" />
         <KpiCard icon={TrendingUp} label="Active Tasks" value={stats?.active ?? "—"} colorClass="text-indigo-700" bgClass="bg-indigo-100" />
@@ -95,7 +94,6 @@ export default function ServicesTab() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Recent Tasks List */}
         <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -182,7 +180,6 @@ export default function ServicesTab() {
           </div>
         </div>
 
-        {/* Side Info */}
         <div className="space-y-4">
           
           <div className="bg-white rounded-lg border border-gray-200 p-5">

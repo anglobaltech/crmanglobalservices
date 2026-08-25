@@ -9,7 +9,6 @@ import {
 import api from "@/services/api";
 import DataTable, { OverflowCell } from "@/components/common/DataTable";
 
-// All available columns in the activity log table (default display order)
 const ALL_LOG_COLUMNS = [
   { key: "member",   label: "Member" },
   { key: "lead",     label: "Lead" },
@@ -110,7 +109,6 @@ export default function ActivityDashboard() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [page, setPage]       = useState(1);
   const [pageSize, setPageSize] = useState(15);
-  // Column picker: stores keys in selection order (first selected = first column)
   const [selectedCols, setSelectedCols] = useState(ALL_LOG_COLUMNS.map(c => c.key));
 
   const [dateFrom, setDateFrom] = useState(todayStr());
@@ -190,7 +188,6 @@ export default function ActivityDashboard() {
 
   const isToday = dateFrom === todayStr() && dateTo === todayStr();
 
-  // All column definitions with render functions — keyed by ALL_LOG_COLUMNS keys
   const ALL_COLUMNS_WITH_RENDER = [
     {
       key: "member",
@@ -306,7 +303,6 @@ export default function ActivityDashboard() {
     }
   ];
 
-  // Build columns in selectedCols order
   const columns = selectedCols
     .map(key => ALL_COLUMNS_WITH_RENDER.find(c => c.key === key))
     .filter(Boolean);
@@ -376,7 +372,6 @@ export default function ActivityDashboard() {
         ))}
       </div>
 
-      {/* Empty state — no updates today */}
       {!loading && logs.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-24 gap-4">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
@@ -401,10 +396,8 @@ export default function ActivityDashboard() {
         </div>
       ) : (
         <>
-          {/* Donut + Team performance */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
 
-            {/* Donut */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-4">Update Breakdown</h3>
               {chartData.length === 0 ? (
@@ -432,7 +425,6 @@ export default function ActivityDashboard() {
               )}
             </div>
 
-            {/* Team table */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 lg:col-span-2">
               <h3 className="text-sm font-semibold text-gray-800 mb-4">
                 {isAdmin ? "All Members" : isManager ? "Team Performance" : "My Performance"}
@@ -479,7 +471,6 @@ export default function ActivityDashboard() {
             </div>
           </div>
 
-          {/* Activity Log Table */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <div>
@@ -510,7 +501,6 @@ export default function ActivityDashboard() {
         </>
       )}
 
-      {/* Detail Modal */}
       {selectedLog && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-gray-100 max-h-[90vh] flex flex-col">
@@ -547,7 +537,6 @@ export default function ActivityDashboard() {
                 </div>
               </div>
 
-              {/* Status change */}
               {selectedLog.oldData?.status && selectedLog.newData?.status && (
                 <div className="p-3 bg-gray-50 rounded-xl">
                   <p className="text-xs text-gray-400 mb-2">Status Change</p>
@@ -569,7 +558,6 @@ export default function ActivityDashboard() {
                 </div>
               )}
 
-              {/* Meeting details */}
               {selectedLog.newData?.meetingDate && (
                 <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                   <p className="text-xs text-cyan-600 font-medium mb-1"> Meeting Scheduled</p>
@@ -591,7 +579,6 @@ export default function ActivityDashboard() {
                 </div>
               )}
 
-              {/* Follow-up note */}
               {selectedLog.newData?.followUpNote && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
                   <p className="text-xs text-amber-600 font-medium mb-1"> Remark</p>
@@ -599,7 +586,6 @@ export default function ActivityDashboard() {
                 </div>
               )}
 
-              {/* Conversation notes */}
               {selectedLog.newData?.notes && (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
                   <p className="text-xs text-gray-500 font-medium mb-1">Conversation Notes</p>

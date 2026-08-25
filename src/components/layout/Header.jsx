@@ -15,7 +15,6 @@ export default function Header() {
 
   return (
     <header className="h-14 sm:h-16 bg-white shadow-sm flex items-center justify-between px-3 sm:px-4 sticky top-0 z-30">
-      {/* Left: hamburger + logo */}
       <div className="flex items-center gap-2">
         <button
           onClick={() => setOpen(true)}
@@ -37,9 +36,7 @@ export default function Header() {
         </Link>
       </div>
 
-      {/* Right: profile + logout */}
       <div className="flex items-center gap-1 sm:gap-3">
-        {/* Profile — name hidden on very small screens */}
         <div
           className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1.5 rounded-lg transition-colors"
           onClick={() => setIsProfileOpen(true)}
@@ -56,7 +53,6 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Logout */}
         <button
           onClick={logout}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500 text-white cursor-pointer font-medium hover:bg-red-700 transition-colors shadow-sm text-xs sm:text-sm"

@@ -20,7 +20,7 @@ export default function MasterDashboard() {
   const isAdmin   = ADMIN_ROLES.includes(roleName);
   const isManager = isAdmin || MANAGER_ROLES.includes(roleName);
 
-  const hasServices = false; // user?.permissions?.services === true;
+  const hasServices = false; 
   const hasSales    = user?.permissions?.sales === true || user?.permissions?.leads === true || isAdmin || isManager;
 
   useEffect(() => {
@@ -36,7 +36,6 @@ export default function MasterDashboard() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "Inter, sans-serif" }}>
 
-      {/* ── Top Header Bar ── */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
 
@@ -56,7 +55,6 @@ export default function MasterDashboard() {
         </div>
       </div>
 
-      {/* ── Main Content ── */}
       <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-8">
         {activeTab === "overview" && <OverviewTab onTabChange={setActiveTab} />}
         
