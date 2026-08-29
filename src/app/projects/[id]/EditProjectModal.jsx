@@ -7,23 +7,22 @@ import { SERVICE_TYPES } from "@/lib/data/projectChecklists";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
-export default function CreateProjectModal({ onClose, onCreated }) {
+export default function EditProjectModal({ project, onClose, onUpdated, updateProject }) {
   const token = typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
-  const { createProject } = useProjects();
   
   const [form, setForm] = useState({ 
-    projectName: "", 
-    clientName: "", 
-    serviceType: "isi", 
-    dueDate: "", 
-    address: "",
-    name: "",
-    phone: "",
-    email: "",
-    notes: "", 
-    isCode: "",
-    assignedTo: [], 
-    assignedToNames: [] 
+    projectName: project.projectName || "", 
+    clientName: project.clientName || "", 
+    serviceType: project.serviceType || "isi", 
+    dueDate: project.dueDate ? new Date(project.dueDate).toISOString().split('T')[0] : "", 
+    address: project.address || "",
+    name: project.name || "",
+    phone: project.phone || "",
+    email: project.email || "",
+    notes: project.notes || "", 
+    isCode: project.isCode || "",
+    assignedTo: project.assignedTo || [], 
+    assignedToNames: project.assignedToNames || [] 
   });
   
   const [users, setUsers] = useState([]);
@@ -62,8 +61,8 @@ export default function CreateProjectModal({ onClose, onCreated }) {
     setSaving(true); 
     setError("");
     try {
-      await createProject(finalForm);
-      onCreated();
+      await updateProject(finalForm);
+      if (onUpdated) onUpdated();
       onClose();
     } catch (err) { 
       setError(err.message); 
@@ -78,8 +77,8 @@ export default function CreateProjectModal({ onClose, onCreated }) {
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">New Certification Project</h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Fill in the details to start a new project</p>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Project</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Update project details</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer">
             <X size={20} />
@@ -112,6 +111,12 @@ export default function CreateProjectModal({ onClose, onCreated }) {
               <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Company Name <span className="text-red-500">*</span></label>
               <input value={form.projectName} onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))}
                 placeholder="Enter company name"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white placeholder-gray-400" />
+            </div>
+            
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Due Date</label>
+              <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white placeholder-gray-400" />
             </div>
 
@@ -194,9 +199,9 @@ export default function CreateProjectModal({ onClose, onCreated }) {
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Creating...
+                Saving...
               </>
-            ) : "Create Project"}
+            ) : "Save Changes"}
           </button>
         </div>
       </div>

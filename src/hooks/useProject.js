@@ -158,6 +158,24 @@ export function useProject(id) {
     }
   };
 
+  const updateProject = async (updates) => {
+    try {
+      const res = await fetch(`${API}/api/projects/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updates),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update project");
+      fetchProject();
+      fetchActivity(1);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+
   const uploadDocument = async (file, onProgress) => {
     if (!file) return;
     try {
@@ -333,6 +351,7 @@ export function useProject(id) {
     addRemark,
     addComment,
     updateStatus,
+    updateProject,
     uploadDocument,
     deleteDocument,
     uploadIsiDocSlot,

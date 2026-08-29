@@ -18,6 +18,7 @@ import Badge from "@/components/ui/Badge";
 import ProgressBar from "@/components/ui/ProgressBar";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import EmptyState from "@/components/ui/EmptyState";
+import EditProjectModal from "./EditProjectModal";
 
 const STATUS_OPTIONS = [
   { value: "pending",     label: "Pending",     color: "bg-slate-100 text-slate-600" },
@@ -778,7 +779,7 @@ export default function ProjectDetailPage({ params }) {
     addRemark, addComment, updateStatus,
     uploadDocument, deleteDocument,
     uploadIsiDocSlot, removeIsiDocSlot, updateIsiDocSlot,
-    ACT_PAGE_SIZE, deleteProject
+    ACT_PAGE_SIZE, deleteProject, updateProject, refetchAll
   } = useProject(id);
 
   const [activeTab, setActiveTab]     = useState(null); 
@@ -786,6 +787,7 @@ export default function ProjectDetailPage({ params }) {
   const [comment, setComment]         = useState("");
   const [sendingComment, setSendingComment] = useState(false);
   const [toast, setToast]             = useState(null);
+  const [showEdit, setShowEdit]       = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -856,22 +858,30 @@ export default function ProjectDetailPage({ params }) {
             <ArrowLeft size={14} /> Back to Projects
           </button>
 
-          {isManager && (
-            <button onClick={async () => {
-              if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
-                try {
-                  await deleteProject();
-                  showToast("Project deleted successfully");
-                  setTimeout(() => router.push("/projects"), 1000);
-                } catch(err) { 
-                  showToast(err.message || "Failed to delete project", "error"); 
+          <div className="flex items-center gap-2">
+            {isManager && (
+              <button onClick={() => setShowEdit(true)}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition cursor-pointer">
+                <Edit2 size={12} /> Edit Project
+              </button>
+            )}
+            {isManager && (
+              <button onClick={async () => {
+                if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+                  try {
+                    await deleteProject();
+                    showToast("Project deleted successfully");
+                    setTimeout(() => router.push("/projects"), 1000);
+                  } catch(err) { 
+                    showToast(err.message || "Failed to delete project", "error"); 
+                  }
                 }
-              }
-            }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer">
-              <Trash2 size={12} /> Delete Project
-            </button>
-          )}
+              }}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer">
+                <Trash2 size={12} /> Delete Project
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -890,6 +900,9 @@ export default function ProjectDetailPage({ params }) {
                 </div>
                 <h1 className="text-lg font-bold text-gray-900">{project.projectName}</h1>
                 <p className="text-xs text-gray-500 mt-0.5">{project.clientName}</p>
+                {project.isCode && (
+                  <p className="text-xs text-indigo-600 font-semibold mt-1">ISI Code: {project.isCode}</p>
+                )}
               </div>
 
               <div className="flex flex-col items-end gap-2 flex-shrink-0">
@@ -1085,6 +1098,18 @@ export default function ProjectDetailPage({ params }) {
           {toast.type === "error" ? <X size={16} /> : <CheckCircle2 size={16} />} 
           {toast.msg}
         </div>
+      )}
+
+      {showEdit && (
+        <EditProjectModal 
+          project={project} 
+          onClose={() => setShowEdit(false)} 
+          updateProject={updateProject} 
+          onUpdated={() => {
+            showToast("Project updated successfully");
+            refetchAll();
+          }} 
+        />
       )}
     </div>
   );
