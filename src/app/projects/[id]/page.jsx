@@ -901,7 +901,7 @@ export default function ProjectDetailPage({ params }) {
                 <h1 className="text-lg font-bold text-gray-900">{project.projectName}</h1>
                 <p className="text-xs text-gray-500 mt-0.5">{project.clientName}</p>
                 {project.isCode && (
-                  <p className="text-xs text-indigo-600 font-semibold mt-1">ISI Code: {project.isCode}</p>
+                  <p className="text-xs text-indigo-600 font-semibold mt-1">IS Code: {project.isCode}</p>
                 )}
               </div>
 

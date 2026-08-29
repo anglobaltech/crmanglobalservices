@@ -147,11 +147,11 @@ export default function CreateProjectModal({ onClose, onCreated }) {
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white placeholder-gray-400" />
             </div>
 
-            {/* ISI Code */}
+            {/* IS Code */}
             <div>
-              <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">ISI Code</label>
+              <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">IS Code</label>
               <input value={form.isCode} onChange={e => setForm(f => ({ ...f, isCode: e.target.value }))}
-                placeholder="Enter ISI Code"
+                placeholder="Enter IS Code"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white placeholder-gray-400" />
             </div>
 
