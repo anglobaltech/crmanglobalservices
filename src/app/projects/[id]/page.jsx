@@ -126,9 +126,16 @@ function ActivityFeed({ activity, actTotal, actPage, actPageSize, onPageChange }
               {(act.performedByName || "?")[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              {act.stepLabel && (
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">{act.stepLabel}</p>
-              )}
+              <div className="flex items-center gap-2 mb-0.5">
+                {act.code && (
+                  <span className="text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 rounded px-1.5 py-0.5">
+                    {act.code}
+                  </span>
+                )}
+                {act.stepLabel && (
+                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{act.stepLabel}</p>
+                )}
+              </div>
               <p className="text-sm text-gray-800 leading-snug">{act.message}</p>
               <p className="text-xs text-gray-400 mt-0.5">{act.performedByName} · {fmtDateTime(act.createdAt)}</p>
             </div>
@@ -569,13 +576,16 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
   );
 }
 
-function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark }) {
+function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark, activeCode, setActiveCode }) {
   const [stepModal, setStepModal] = useState(null);
   const [modalDate, setModalDate] = useState("");
   const [modalRemark, setModalRemark] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const isiStages = project.isiStages || [];
+  const isCodes = project.isCodes || [];
+  const currentCodeObj = isCodes.find(c => c.code === activeCode) || isCodes[0];
+  const isiStages = currentCodeObj ? (currentCodeObj.stages || []) : (project.isiStages || []);
+
   const totalSteps = isiStages.reduce((a, s) => a + s.steps.length, 0);
   const doneSteps  = isiStages.reduce((a, s) => a + s.steps.filter(st => st.done).length, 0);
   const pct = totalSteps > 0 ? Math.round((doneSteps / totalSteps) * 100) : 0;
@@ -593,6 +603,7 @@ function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark }) {
       await toggleIsiStep(stepModal.id, {
         dateValue: stepModal.type === "date" ? modalDate : undefined,
         remark: modalRemark.trim() || undefined,
+        code: currentCodeObj ? currentCodeObj.code : undefined,
       });
       setStepModal(null);
     } catch (err) {
@@ -608,9 +619,20 @@ function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark }) {
 
   return (
     <>
+      {isCodes.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4">
+          {isCodes.map(c => (
+            <button key={c.code} onClick={() => setActiveCode(c.code)}
+              className={`px-4 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition cursor-pointer border ${c.code === activeCode ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"}`}>
+              {c.code || "Default IS Code"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Summary progress */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
-        <ProgressBar progress={pct} label={`${doneSteps} of ${totalSteps} steps completed`} showPercentage />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4 mb-4">
+        <ProgressBar progress={pct} label={`${doneSteps} of ${totalSteps} steps completed for ${currentCodeObj?.code || 'this code'}`} showPercentage />
       </div>
 
       {/* Stage cards */}
@@ -788,6 +810,11 @@ export default function ProjectDetailPage({ params }) {
   const [sendingComment, setSendingComment] = useState(false);
   const [toast, setToast]             = useState(null);
   const [showEdit, setShowEdit]       = useState(false);
+  
+  const [activeCode, setActiveCode] = useState(() => {
+    const codes = project?.isCodes || [];
+    return codes.length > 0 ? codes[0].code : "";
+  });
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -800,17 +827,28 @@ export default function ProjectDetailPage({ params }) {
   const isIsi = project.serviceType === "isi";
   const isBisCrs = project.serviceType === "bis_crs";
   const isHallmarking = project.serviceType === "hallmarking";
-  const usesStages = isIsi || isBisCrs || isHallmarking; 
+  const isFmcs = project.serviceType === "fmcs";
+  const usesStages = isIsi || isBisCrs || isHallmarking || isFmcs; 
   const typeConfig = SERVICE_TYPES[project.serviceType] || { label: project.serviceType, color: "bg-gray-100 text-gray-600 border-gray-200" };
   const statusConfig = STATUS_OPTIONS.find(s => s.value === project.status) || STATUS_OPTIONS[0];
 
-  const isiStages   = project.isiStages || [];
+  const isCodes = project.isCodes || [];
+  const defaultCode = isCodes.length > 0 ? isCodes[0].code : "";
+  const currentCode = isCodes.find(c => c.code === activeCode) ? activeCode : defaultCode;
+  
+  const allStages = isCodes.length > 0 ? isCodes.flatMap(c => c.stages || []) : (project.isiStages || []);
   const isiDocSlots = project.isiDocSlots || [];
   const flatChecklist = project.checklist || [];
 
-  const isiTotalSteps = isiStages.reduce((a, s) => a + s.steps.length, 0);
-  const isiDoneSteps  = isiStages.reduce((a, s) => a + s.steps.filter(st => st.done).length, 0);
-  const isiPct = isiTotalSteps > 0 ? Math.round((isiDoneSteps / isiTotalSteps) * 100) : 0;
+  const overallTotalSteps = allStages.reduce((a, s) => a + (s.steps ? s.steps.length : 0), 0);
+  const overallDoneSteps  = allStages.reduce((a, s) => a + (s.steps ? s.steps.filter(st => st.done).length : 0), 0);
+  const isiPct = overallTotalSteps > 0 ? Math.round((overallDoneSteps / overallTotalSteps) * 100) : 0;
+
+  const currentCodeObj = isCodes.find(c => c.code === currentCode) || isCodes[0];
+  const activeStages = currentCodeObj ? (currentCodeObj.stages || []) : (project.isiStages || []);
+  const activeTotalSteps = activeStages.reduce((a, s) => a + (s.steps ? s.steps.length : 0), 0);
+  const activeDoneSteps  = activeStages.reduce((a, s) => a + (s.steps ? s.steps.filter(st => st.done).length : 0), 0);
+
 
   const flatDone = flatChecklist.filter(i => i.done).length;
   const flatPct  = flatChecklist.length > 0 ? Math.round((flatDone / flatChecklist.length) * 100) : 0;
@@ -828,7 +866,7 @@ export default function ProjectDetailPage({ params }) {
 
   const tabs = usesStages
     ? [
-        { key: "stages",    label: `Process Stages (${isiDoneSteps}/${isiTotalSteps})`, icon: ClipboardList },
+        { key: "stages",    label: `Process Stages (${activeDoneSteps}/${activeTotalSteps})`, icon: ClipboardList },
         { key: "documents", label: `Documents Required (${docSlotsCompleted}/${isiDocSlots.length})`, icon: BookOpen },
         { key: "activity",  label: `Activity (${actTotal})`, icon: Activity },
       ]
@@ -1005,6 +1043,8 @@ export default function ProjectDetailPage({ params }) {
             isManager={isManager}
             toggleIsiStep={toggleIsiStep}
             addRemark={addRemark}
+            activeCode={activeCode}
+            setActiveCode={setActiveCode}
           />
         )}
 

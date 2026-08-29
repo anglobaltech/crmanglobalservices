@@ -82,12 +82,12 @@ export function useProject(id) {
     }
   };
 
-  const toggleIsiStep = async (stepId, { dateValue, remark } = {}) => {
+  const toggleIsiStep = async (stepId, { dateValue, remark, code } = {}) => {
     try {
       const res = await fetch(`${API}/api/projects/${id}/stage/${stepId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ dateValue: dateValue || null, remark: remark || null }),
+        body: JSON.stringify({ dateValue: dateValue || null, remark: remark || null, code: code || "" }),
       });
       if (!res.ok) throw new Error("Failed to toggle stage step");
       fetchProject();
