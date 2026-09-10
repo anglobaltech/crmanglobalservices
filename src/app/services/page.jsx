@@ -7,7 +7,8 @@ import {
   Plus, Search, Filter, RefreshCw, Wrench,
   Clock, CheckCircle2, AlertTriangle, Users,
   TrendingUp, Calendar, ChevronRight, ChevronLeft,
-  Eye, Trash2, MoreVertical, ArrowUpDown
+  Eye, Trash2, MoreVertical, ArrowUpDown,
+  Upload, X, FileText
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -337,7 +338,7 @@ function CreateServiceModal({ token, currentUser, onClose, onCreated }) {
   const [form, setForm] = useState({
     serviceName: "", clientName: "", description: "", category: "General",
     priority: "medium", assignedTo: "", assignedToName: "", dueDate: "",
-    currentStage: "Not Started",
+    currentStage: "Not Started", files: [],
   });
   const [users, setUsers] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -349,6 +350,33 @@ function CreateServiceModal({ token, currentUser, onClose, onCreated }) {
       .then(d => setUsers(Array.isArray(d.users) ? d.users : Array.isArray(d) ? d : []))
       .catch(() => setUsers([]));
   }, [token]);
+
+  const handleFileChange = async (e) => {
+    const selected = Array.from(e.target.files);
+    if (!selected.length) return;
+
+    const filePromises = selected.map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            base64: reader.result
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const fileData = await Promise.all(filePromises);
+    setForm(f => ({ ...f, files: [...f.files, ...fileData] }));
+  };
+
+  const removeFile = (index) => {
+    setForm(f => ({ ...f, files: f.files.filter((_, i) => i !== index) }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -367,60 +395,119 @@ function CreateServiceModal({ token, currentUser, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Create New Service</h2>
-          <p className="text-sm text-gray-500 mt-1">Fill in the details to assign a new service task</p>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Service Name *</label>
-              <input value={form.serviceName} onChange={e => setForm(f => ({ ...f, serviceName: e.target.value }))} placeholder="e.g. ISI Certificate Renewal" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Client Name *</label>
-              <input value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Ravi Industries" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Priority</label>
-              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
-                {Object.entries(PRIORITY_CONFIG).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Category</label>
-              <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Certification" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Assign To</label>
-              <select value={form.assignedTo} onChange={e => {
-                const selected = users.find(u => u.id === e.target.value);
-                setForm(f => ({ ...f, assignedTo: e.target.value, assignedToName: selected ? selected.name : "" }));
-              }} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
-                <option value="">— Unassigned —</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.department})</option>)}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Due Date</label>
-              <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Description</label>
-              <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Provide a brief description of the service task..." className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none" />
-            </div>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Assign New Service Task</h2>
+            <p className="text-sm text-gray-500 mt-1">Fill in the details, attach relevant files, and assign to a team member</p>
           </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+          {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-center gap-2"><AlertTriangle size={16}/> {error}</div>}
 
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">Cancel</button>
-            <button type="submit" disabled={saving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer">
-              {saving ? "Creating..." : "Create Service"}
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left Column: Service Details */}
+            <div className="space-y-5">
+              <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2"><Wrench size={16} className="text-blue-600"/> Service Details</h3>
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Service Name *</label>
+                <input value={form.serviceName} onChange={e => setForm(f => ({ ...f, serviceName: e.target.value }))} placeholder="e.g. ISI Certificate Renewal" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Client Name *</label>
+                <input value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} placeholder="e.g. Ravi Industries" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Category</label>
+                <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Certification" className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Description</label>
+                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={4} placeholder="Provide a detailed description of the service task..." className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none" />
+              </div>
+            </div>
+
+            {/* Right Column: Assignment & Attachments */}
+            <div className="space-y-5">
+              <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 flex items-center gap-2"><Users size={16} className="text-blue-600"/> Assignment & Attachments</h3>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Assign To</label>
+                <select value={form.assignedTo} onChange={e => {
+                  const selected = users.find(u => u.id === e.target.value);
+                  setForm(f => ({ ...f, assignedTo: e.target.value, assignedToName: selected ? selected.name : "" }));
+                }} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
+                  <option value="">— Unassigned —</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.department})</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Priority</label>
+                  <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
+                    {Object.entries(PRIORITY_CONFIG).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Due Date</label>
+                  <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Attachments (Leads, Images, Excel, etc.)</label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 hover:bg-blue-50/50 transition-colors relative">
+                  <div className="space-y-1 text-center">
+                    <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                    <div className="flex text-sm text-gray-600 justify-center">
+                      <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                        <span>Upload files</span>
+                        <input type="file" multiple className="sr-only" onChange={handleFileChange} />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">Any file up to 10MB</p>
+                  </div>
+                </div>
+
+                {form.files.length > 0 && (
+                  <ul className="mt-3 divide-y divide-gray-100 bg-gray-50 rounded-lg border border-gray-200">
+                    {form.files.map((file, idx) => (
+                      <li key={idx} className="flex items-center justify-between py-2 pl-3 pr-4 text-sm">
+                        <div className="flex w-0 flex-1 items-center">
+                          <FileText className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                          <span className="ml-2 w-0 flex-1 truncate text-gray-600">{file.name}</span>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <button type="button" onClick={() => removeFile(idx)} className="font-medium text-red-500 hover:text-red-600 cursor-pointer p-1">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
         </form>
+        
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-3">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-lg transition-colors cursor-pointer">Cancel</button>
+          <button type="submit" onClick={handleSubmit} disabled={saving} className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center gap-2">
+            {saving ? <RefreshCw className="animate-spin" size={16}/> : <CheckCircle2 size={16}/>}
+            {saving ? "Creating Service..." : "Create & Assign Service"}
+          </button>
+        </div>
       </div>
     </div>
   );

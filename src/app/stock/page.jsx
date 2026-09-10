@@ -8,7 +8,8 @@ import {
   BarChart3, AlertTriangle, Calendar, X,
   SlidersHorizontal, ChevronLeft, ChevronRight,
   User, Car, Building2, Hash, Package, ArrowRight,
-  Filter, ChevronDown, Scale,
+  Filter, ChevronDown, Scale, TrendingUp, TrendingDown,
+  Layers, ArrowUpCircle, ArrowDownCircle, Boxes,
   FileText, ExternalLink, Eye, Download, Camera, Video,
 } from "lucide-react";
 import api from "@/services/api";
@@ -98,6 +99,7 @@ const ENTRY_COLS = [
   { key: "stockEntryId",   label: "ID" },
   { key: "invoiceNumber",  label: "Invoice No." },
   { key: "productName",    label: "Product" },
+  { key: "batchNumber",    label: "Batch No." },
   { key: "billFrom",       label: "From" },
   { key: "billTo",         label: "To" },
   { key: "totalBilledQty", label: "Total Qty" },
@@ -481,6 +483,7 @@ function DetailModal({ entry, type, onClose }) {
               </Sec>
               <Sec title="Product Info">
                 <Row label="Product Name" value={entry.productName} />
+                <Row label="Batch No."    value={entry.batchNumber} />
                 <Row label="HSN Code"     value={entry.hsnCode} />
                 <Row label="Vehicle No."  value={entry.vehicleNumber} />
               </Sec>
@@ -727,6 +730,162 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
 
 const PAGE_SIZE = 20;
 
+/* ── Product Inventory Summary Card ─────────────────────────────────── */
+function ProductInventoryCard({ product, stockEntries, stockExits }) {
+  const entries = stockEntries.filter(
+    e => (e.productName || "").trim().toLowerCase() === product.toLowerCase()
+  );
+  const exits = stockExits.filter(
+    e => (e.productName || "").trim().toLowerCase() === product.toLowerCase()
+  );
+
+  const totalReceived = entries.reduce((s, e) => s + (Number(e.approvedQty) || 0), 0);
+  const totalExited   = exits.reduce((s, e) => s + (Number(e.qtyDispatched) || 0), 0);
+  const netBalance    = totalReceived - totalExited;
+  const isLow         = netBalance > 0 && netBalance < totalReceived * 0.2;
+  const isEmpty       = netBalance <= 0;
+
+  const balanceColor = isEmpty ? "text-red-600" : isLow ? "text-amber-600" : "text-emerald-600";
+  const balanceBg    = isEmpty ? "from-red-50 to-orange-50 border-red-100" : isLow ? "from-amber-50 to-yellow-50 border-amber-100" : "from-emerald-50 to-teal-50 border-emerald-100";
+  const StatusIcon   = isEmpty ? AlertTriangle : isLow ? AlertTriangle : CheckCircle2;
+  const statusMsg    = isEmpty ? "Out of Stock" : isLow ? "Low Stock" : "In Stock";
+  const statusColor  = isEmpty ? "text-red-500" : isLow ? "text-amber-500" : "text-emerald-500";
+
+  return (
+    <div className={`rounded-2xl border bg-gradient-to-r ${balanceBg} p-4`} style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm">
+            <Boxes size={15} className="text-gray-600" />
+          </div>
+          <div>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Product Inventory</p>
+            <h3 className="text-sm font-bold text-gray-900 leading-tight">{product}</h3>
+          </div>
+        </div>
+        <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 bg-white rounded-full shadow-sm ${statusColor}`}>
+          <StatusIcon size={10} />{statusMsg}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {/* Total Received */}
+        <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-emerald-100">
+          <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+            <ArrowUpCircle size={13} className="text-emerald-600" />
+          </div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total In</p>
+          <p className="text-base font-bold text-emerald-700 leading-tight">
+            {totalReceived > 0 ? totalReceived.toLocaleString() : "0"}
+            <span className="text-[9px] font-semibold text-emerald-500 ml-0.5">kg</span>
+          </p>
+          <p className="text-[9px] text-gray-400 mt-0.5">{entries.length} entr{entries.length === 1 ? "y" : "ies"}</p>
+        </div>
+
+        {/* Total Exited */}
+        <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-orange-100">
+          <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
+            <ArrowDownCircle size={13} className="text-orange-500" />
+          </div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total Out</p>
+          <p className="text-base font-bold text-orange-600 leading-tight">
+            {totalExited > 0 ? totalExited.toLocaleString() : "0"}
+            <span className="text-[9px] font-semibold text-orange-400 ml-0.5">kg</span>
+          </p>
+          <p className="text-[9px] text-gray-400 mt-0.5">{exits.length} exit{exits.length === 1 ? "" : "s"}</p>
+        </div>
+
+        {/* Net Balance */}
+        <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-blue-100">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1.5 ${
+            isEmpty ? "bg-red-100" : isLow ? "bg-amber-100" : "bg-blue-100"
+          }`}>
+            <Scale size={13} className={isEmpty ? "text-red-500" : isLow ? "text-amber-500" : "text-blue-600"} />
+          </div>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Net Balance</p>
+          <p className={`text-base font-bold leading-tight ${balanceColor}`}>
+            {netBalance > 0 ? netBalance.toLocaleString() : "0"}
+            <span className="text-[9px] font-semibold ml-0.5">kg</span>
+          </p>
+          <p className="text-[9px] text-gray-400 mt-0.5">remaining</p>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      {totalReceived > 0 && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px] text-gray-400 font-medium">Stock utilisation</span>
+            <span className="text-[9px] font-bold text-gray-500">
+              {Math.min(100, Math.round((totalExited / totalReceived) * 100))}% dispatched
+            </span>
+          </div>
+          <div className="h-1.5 bg-white rounded-full overflow-hidden shadow-inner">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                isEmpty ? "bg-red-400" : isLow ? "bg-amber-400" : "bg-emerald-400"
+              }`}
+              style={{ width: `${Math.min(100, Math.round((totalExited / totalReceived) * 100))}%` }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Product Filter Strip ────────────────────────────────────────────── */
+function ProductFilterStrip({ products, activeProduct, onSelect, stockEntries, stockExits }) {
+  const scrollRef = useRef(null);
+
+  if (products.length === 0) return null;
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="flex items-center gap-2 overflow-x-auto pb-1"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
+        {/* All Products chip */}
+        <button
+          onClick={() => onSelect(null)}
+          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${
+            !activeProduct
+              ? "bg-gray-900 text-white border-gray-900 shadow-md"
+              : "bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-700"
+          }`}
+        >
+          <Layers size={10} />
+          All Products
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
+            !activeProduct ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+          }`}>{products.length}</span>
+        </button>
+
+        {/* Product chips */}
+        {products.map(p => {
+          const isActive = activeProduct === p;
+
+          return (
+            <button
+              key={p}
+              onClick={() => onSelect(p)}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${
+                isActive
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50"
+              }`}
+            >
+              <span className="max-w-[160px] truncate">{p}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function StockPage() {
   const [tab, setTab]   = useState("gate");
   const [search, setSearch] = useState("");
@@ -746,6 +905,8 @@ export default function StockPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [activeProduct, setActiveProduct] = useState(null);
+  const [showProductFilter, setShowProductFilter] = useState(false);
 
   useEffect(() => {
     try {
@@ -781,12 +942,29 @@ export default function StockPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => { setPage(1); setSelectedIds([]); }, [tab, search, dateFrom, dateTo]);
+  // Reset activeProduct when tab changes so filters stay sensible
+  useEffect(() => { setActiveProduct(null); setPage(1); }, [tab]);
+
+  // ── Compute all unique products (case-insensitive) across all collections ──
+  const allProducts = React.useMemo(() => {
+    const seen = new Map(); // lowercase key → first-seen display name
+    [...gateEntries, ...stockEntries, ...stockExits].forEach(e => {
+      const n = (e.productName || "").trim();
+      if (n && !seen.has(n.toLowerCase())) seen.set(n.toLowerCase(), n);
+    });
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  }, [gateEntries, stockEntries, stockExits]);
 
   const filter = (list, dateKey = "entryDate") =>
     list.filter(e => {
       const d = toDateStr(e[dateKey] || e.createdAt);
       if (dateFrom && d < dateFrom) return false;
       if (dateTo   && d > dateTo)   return false;
+      // Product filter
+      if (activeProduct) {
+        const pn = (e.productName || "").trim().toLowerCase();
+        if (pn !== activeProduct.toLowerCase()) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         return Object.values(e).some(v => v && String(v).toLowerCase().includes(q));
@@ -904,7 +1082,7 @@ export default function StockPage() {
         )}
       </div>
 
-      <div className="px-3 sm:px-6 py-3 sm:py-5 space-y-3 sm:space-y-5 max-w-7xl mx-auto">
+      <div className="px-3 sm:px-6 py-2 sm:py-3 space-y-2 max-w-7xl mx-auto">
 
         <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <KpiCard icon={ClipboardList} label="Gate Entries"  value={kpiGate}  color="blue"
@@ -916,6 +1094,65 @@ export default function StockPage() {
           <KpiCard icon={BarChart3}     label="Approved"      value={`${kpiApprv.toLocaleString()} kg`} color="green" sub="approved qty" />
           <KpiCard icon={AlertTriangle} label="Rejected"      value={`${kpiRej.toLocaleString()} kg`}   color="red"   sub="rejected qty" />
         </div>
+
+        {/* ── Product Filter Strip (collapsible) ────────────────────────── */}
+        {allProducts.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Header row — always visible */}
+            <button
+              onClick={() => setShowProductFilter(v => !v)}
+              className="w-full flex items-center gap-2 px-3 sm:px-4 py-2.5 cursor-pointer hover:bg-gray-50/60 transition-colors"
+            >
+              <div className="w-5 h-5 bg-blue-50 rounded-md flex items-center justify-center flex-shrink-0">
+                <Filter size={10} className="text-blue-500" />
+              </div>
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Filter by Product</span>
+              <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full font-bold">{allProducts.length}</span>
+
+              {/* Active product badge */}
+              {activeProduct && (
+                <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 bg-blue-600 text-white rounded-full ml-1">
+                  <Boxes size={8} />
+                  <span className="max-w-[100px] truncate">{activeProduct}</span>
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveProduct(null); setPage(1); }}
+                    className="ml-0.5 hover:opacity-70 cursor-pointer"
+                  >
+                    <X size={7} />
+                  </span>
+                </span>
+              )}
+
+              <ChevronDown
+                size={13}
+                className={`ml-auto text-gray-400 transition-transform duration-200 ${showProductFilter ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Collapsible chips area */}
+            {showProductFilter && (
+              <div className="border-t border-gray-100 px-3 sm:px-4 py-2.5">
+                <ProductFilterStrip
+                  products={allProducts}
+                  activeProduct={activeProduct}
+                  onSelect={(p) => { setActiveProduct(p); setPage(1); setSelectedIds([]); }}
+                  stockEntries={stockEntries}
+                  stockExits={stockExits}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Product Inventory Summary (shown when product is selected) ── */}
+        {activeProduct && (
+          <ProductInventoryCard
+            product={activeProduct}
+            stockEntries={stockEntries}
+            stockExits={stockExits}
+          />
+        )}
 
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
 
@@ -942,17 +1179,28 @@ export default function StockPage() {
             </button>
           </div>
 
-          <div className="px-3 sm:px-4 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
+          <div className="px-3 sm:px-4 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-1.5">
             <span className="text-[10px] text-gray-400 font-medium">
               {currentList.length} record{currentList.length !== 1 ? "s" : ""}
               {datesActive ? " · date filtered" : ""}
+              {activeProduct ? ` · ${activeProduct}` : ""}
               {search ? ` · "${search}"` : ""}
             </span>
-            {datesActive && (
-              <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Calendar size={9} />Filtered by date
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {activeProduct && (
+                <button
+                  onClick={() => { setActiveProduct(null); setPage(1); }}
+                  className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer hover:bg-blue-100 transition-colors"
+                >
+                  <Boxes size={9} />{activeProduct}<X size={8} className="ml-0.5" />
+                </button>
+              )}
+              {datesActive && (
+                <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Calendar size={9} />Date filtered
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Mobile cards */}

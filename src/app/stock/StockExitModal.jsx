@@ -148,7 +148,7 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
   const [form, setForm] = useState({
     buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
     invoiceDocNumber: "", ewayBillApplicable: null, ewayBillNumber: "",
-    productName: "", batchNumber: "", qtyDispatched: "", packagingType: "", totalValue: "",
+    productName: "", batchNumber: "", qtyDispatched: "", packagingType: "",
     destination: "", stockEntryRef: "", gateEntryRef: "",
     transportMode: "transporter", transporterName: "", vehicleNumber: "", driverName: "", driverPhone: "", driverId: "",
     exitDate: new Date().toISOString().split("T")[0], remarks: "",
@@ -282,13 +282,20 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
                 <Input placeholder="e.g. BATCH-001" value={form.batchNumber} onChange={e => set("batchNumber", e.target.value)} />
               </Field>
               <Field label="Quantity Dispatched" required>
-                <Input type="number" min="0" placeholder="0" value={form.qtyDispatched} onChange={e => set("qtyDispatched", e.target.value)} />
+                <div className="flex">
+                  <Input
+                    type="number" min="0" placeholder="0"
+                    value={form.qtyDispatched}
+                    onChange={e => set("qtyDispatched", e.target.value)}
+                    style={{ borderRadius: "0.5rem 0 0 0.5rem", borderRight: "none" }}
+                  />
+                  <span className="flex items-center px-3 bg-gray-100 border border-gray-200 rounded-r-lg text-xs font-bold text-gray-500 flex-shrink-0">
+                    kg
+                  </span>
+                </div>
               </Field>
               <Field label="Type of Packaging">
                 <Input placeholder="e.g. 50kg bags, Box" value={form.packagingType} onChange={e => set("packagingType", e.target.value)} />
-              </Field>
-              <Field label="Total Value of Goods">
-                <Input type="number" min="0" placeholder="0.00" value={form.totalValue} onChange={e => set("totalValue", e.target.value)} />
               </Field>
               <Field label="Exit Date">
                 <Input type="date" value={form.exitDate} onChange={e => set("exitDate", e.target.value)} />

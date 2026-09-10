@@ -123,7 +123,7 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    invoiceNumber: "", billFrom: "", billTo: "", productName: "",
+    invoiceNumber: "", billFrom: "", billTo: "", productName: "", batchNumber: "",
     totalBilledQty: "", approvedQty: "", rejectedQty: "",
     rejectionReason: "", rejectedItemPhoto: null, rejectedItemVideo: null,
     witnessName: "", witnessPhone: "",
@@ -228,6 +228,9 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
               </Field>
               <Field label="Product Name">
                 <Input placeholder="Product as per invoice" value={form.productName} onChange={e => set("productName", e.target.value)} />
+              </Field>
+              <Field label="Lot No / Batch No">
+                <Input placeholder="Lot / Batch number" value={form.batchNumber} onChange={e => set("batchNumber", e.target.value)} />
               </Field>
             </div>
           </SectionBlock>

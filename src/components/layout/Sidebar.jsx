@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, BarChart3, ClipboardList,
-  Settings, Wrench, FolderOpen, Package, X, Briefcase, Search,
+  Settings, Wrench, FolderOpen, Package, X, Briefcase, Search, FileText,
 } from "lucide-react";
 import { useSidebar } from "./SidebarContext";
 import { useAuth } from "@/context/AuthContext";
@@ -16,15 +16,16 @@ export default function Sidebar() {
   const { user } = useAuth();
 
   const menuItems = [
-    user?.permissions?.dashboard && { name: "Dashboard",        path: "/dashboard",      icon: LayoutDashboard },
-    user?.permissions?.sales     && { name: "Sales",            path: "/sales",          icon: BarChart3 },
-    user?.permissions?.allocate  && { name: "Allocate Leads",   path: "/allocate-leads", icon: ClipboardList },
-    user?.permissions?.services  && { name: "Services",         path: "/services",       icon: Wrench },
-    user?.permissions?.services  && { name: "Projects",         path: "/projects",       icon: FolderOpen },
-    user?.permissions?.stock     && { name: "Stock Management", path: "/stock",          icon: Package },
-    user?.permissions?.employees && { name: "Employees",        path: "/employees",      icon: Briefcase },
-    user?.permissions?.users     && { name: "Users",            path: "/users",          icon: Users },
-    user?.permissions?.settings  && { name: "Settings",         path: "/settings",       icon: Settings },
+    user?.permissions?.dashboard && { name: "Dashboard",        path: "/dashboard",       icon: LayoutDashboard },
+    user?.permissions?.sales     && { name: "Sales",            path: "/sales",           icon: BarChart3 },
+    user?.permissions?.allocate  && { name: "Allocate Leads",   path: "/allocate-leads",  icon: ClipboardList },
+    user?.permissions?.services  && { name: "Services",         path: "/services",        icon: Wrench },
+    user?.permissions?.services  && { name: "Projects",         path: "/projects",        icon: FolderOpen },
+    user?.permissions?.services  && { name: "Document Formats", path: "/document-formats", icon: FileText },
+    user?.permissions?.stock     && { name: "Stock Management", path: "/stock",           icon: Package },
+    user?.permissions?.employees && { name: "Employees",        path: "/employees",       icon: Briefcase },
+    user?.permissions?.users     && { name: "Users",            path: "/users",           icon: Users },
+    user?.permissions?.settings  && { name: "Settings",         path: "/settings",        icon: Settings },
   ].filter(Boolean);
 
   return (
