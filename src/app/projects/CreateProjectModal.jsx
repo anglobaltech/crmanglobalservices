@@ -14,7 +14,7 @@ export default function CreateProjectModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ 
     projectName: "", 
     clientName: "", 
-    serviceType: "isi", 
+    serviceType: "", 
     dueDate: "", 
     address: "",
     name: "",
@@ -57,6 +57,7 @@ export default function CreateProjectModal({ onClose, onCreated }) {
   };
 
   const handleSubmit = async () => {
+    if (!form.serviceType) return setError("Please select a Service Type.");
     if (!form.projectName) return setError("Company name is required");
     const finalForm = { ...form, clientName: form.clientName || form.projectName };
     setSaving(true); 
