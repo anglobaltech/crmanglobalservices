@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { DEPARTMENTS, MODULES, DEPT_COLORS, MODULE_LABELS } from "@/lib/data/rolesConfig";
-import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal, Wrench, FolderOpen, Package } from "lucide-react";
+import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal, Wrench, FolderOpen, Package, FileText } from "lucide-react";
 
 const MODULE_ICONS = {
   dashboard: LayoutDashboard,
@@ -15,6 +15,7 @@ const MODULE_ICONS = {
   projects: FolderOpen,
   stock: Package,
   employees: Users,
+  documents: FileText,  
 };
 
 const MODULE_DESCRIPTIONS = {
@@ -27,6 +28,7 @@ const MODULE_DESCRIPTIONS = {
   projects: "Manage ISI, FMCS, Hallmarking & BIS CRS certification projects",
   stock: "Manage stock gate entries, inventory and dispatch records",
   employees: "Manage employee records, designations and HR information",
+  documents: "Manage document formats and templates",
 };
 
 export default function SettingsPage() {

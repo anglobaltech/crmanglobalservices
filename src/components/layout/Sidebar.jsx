@@ -21,7 +21,7 @@ export default function Sidebar() {
     user?.permissions?.allocate  && { name: "Allocate Leads",   path: "/allocate-leads",  icon: ClipboardList },
     user?.permissions?.services  && { name: "Services",         path: "/services",        icon: Wrench },
     user?.permissions?.services  && { name: "Projects",         path: "/projects",        icon: FolderOpen },
-    user?.permissions?.services  && { name: "Document Formats", path: "/document-formats", icon: FileText },
+    user?.permissions?.documents && { name: "Document Formats", path: "/document-formats", icon: FileText },
     user?.permissions?.stock     && { name: "Stock Management", path: "/stock",           icon: Package },
     user?.permissions?.employees && { name: "Employees",        path: "/employees",       icon: Briefcase },
     user?.permissions?.users     && { name: "Users",            path: "/users",           icon: Users },
