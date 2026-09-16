@@ -76,6 +76,8 @@ const STATUS_CONFIG = {
 };
 const ALL_STATUSES = Object.keys(STATUS_CONFIG);
 
+const LEAD_TYPES = ["ISI Certificate","BIS Hallmarking","BIS CRS","Machine & Lab Equipment","Food Ingredients"];
+
 const ALL_SALES_COLUMNS = [
   { key: "leadId", label: "Lead ID" },
   { key: "createdAt", label: "Created At" },
@@ -416,6 +418,14 @@ function ProductCell({ lead }) {
   const productStr = lead.productInterest || "";
   const isLong = productStr.length > 20;
 
+  const leadTypeBadgeColor =
+    lead.leadType === "ISI Certificate"          ? "bg-blue-100 text-blue-700"    :
+    lead.leadType === "BIS Hallmarking"          ? "bg-amber-100 text-amber-700"  :
+    lead.leadType === "BIS CRS"                  ? "bg-purple-100 text-purple-700":
+    lead.leadType === "Machine & Lab Equipment" ? "bg-teal-100 text-teal-700"    :
+    lead.leadType === "Food Ingredients"         ? "bg-green-100 text-green-700"  :
+    "bg-gray-100 text-gray-600";
+
   return (
     <>
       <div 
@@ -433,6 +443,11 @@ function ProductCell({ lead }) {
             </span>
           )}
         </div>
+        {lead.leadType && (
+          <span className={`self-start px-1.5 py-0.5 rounded-full text-[9px] font-semibold max-w-[130px] truncate ${leadTypeBadgeColor}`}>
+            {lead.leadType}
+          </span>
+        )}
         {lead.state && (
           <div className="flex items-center gap-1 text-gray-400 text-[10px] max-w-[130px]">
             <MapPin size={9} className="flex-shrink-0" />
@@ -461,6 +476,14 @@ function ProductCell({ lead }) {
             </div>
             
             <div className="space-y-4">
+              {lead.leadType && (
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Lead Type</p>
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${leadTypeBadgeColor}`}>
+                    {lead.leadType}
+                  </span>
+                </div>
+              )}
               <div>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Product Interest</p>
                 <p className="text-sm text-gray-700 leading-relaxed break-words">
@@ -723,6 +746,7 @@ export default function SalesPage() {
   const [dateTo, setDateTo] = useState(todayStr());
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [leadType, setLeadType] = useState("");
   const [userId, setUserId] = useState("");
   const [modal, setModal] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -776,6 +800,7 @@ export default function SalesPage() {
       if (dateTo) params.dateTo = dateTo;
       if (search) params.search = search;
       if (userId) params.userId = userId;
+      if (leadType) params.leadType = leadType;
       const isFollowupTab = statusFilter === "callback";
       const isQuotationTab = statusFilter === "quotation";
       if (!["all", "callback", "quotation"].includes(statusFilter))
@@ -815,6 +840,7 @@ export default function SalesPage() {
     dateFrom,
     dateTo,
     search,
+    leadType,
     statusFilter,
     userId,
     page,
@@ -902,6 +928,7 @@ export default function SalesPage() {
     dateFrom !== todayStr() ||
     dateTo !== todayStr() ||
     search ||
+    leadType ||
     userId ||
     statusFilter !== "all";
 
@@ -1212,6 +1239,7 @@ export default function SalesPage() {
               setDateTo(todayStr());
               setSearch("");
               setUserId("");
+              setLeadType("");
               setStatusFilter("all");
               setPage(1);
             }}
@@ -1223,6 +1251,27 @@ export default function SalesPage() {
         <span className="ml-auto self-center text-xs text-gray-400 font-medium">
           {total} leads
         </span>
+      </div>
+
+      {/* Lead Type Filter */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => { setLeadType(""); setPage(1); }}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${leadType === "" ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-800"}`}
+          >
+            All Types
+          </button>
+          {LEAD_TYPES.map((t) => (
+            <button
+              key={t}
+              onClick={() => { setLeadType(t); setPage(1); }}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${leadType === t ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-800"}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 shadow-sm overflow-x-auto scrollbar-none mb-4 sm:mb-5">

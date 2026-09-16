@@ -312,7 +312,7 @@ export default function DataTable({
               </tr>
             </thead>
 
-            <tbody className="bg-white divide-y divide-gray-50">
+            <tbody className="bg-white divide-y divide-gray-100">
               {loading ? (
                 <tr>
                   <td colSpan={visibleColumns.length + (selection ? 1 : 0)} className="px-5 py-12 text-center text-sm text-gray-400">

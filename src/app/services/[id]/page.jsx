@@ -168,25 +168,25 @@ export default function ServiceDetailPage({ params }) {
     <div className="min-h-screen bg-gray-50/50 p-4 sm:p-6 lg:p-8" style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="max-w-[1200px] mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-3 sm:gap-4">
-            <button onClick={() => router.push("/services")} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors shadow-sm cursor-pointer flex-shrink-0 mt-0.5 sm:mt-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.push("/services")} className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-all cursor-pointer flex-shrink-0">
               <ArrowLeft size={16} />
             </button>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{service.serviceName}</h1>
-                <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wide flex-shrink-0 ${PRIORITY_CONFIG[service.priority]?.className || "bg-gray-100 text-gray-600"}`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg font-bold text-gray-900 truncate tracking-tight">{service.serviceName}</h1>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex-shrink-0 border ${PRIORITY_CONFIG[service.priority]?.className || "bg-gray-100 text-gray-600 border-gray-200"}`}>
                   {PRIORITY_CONFIG[service.priority]?.label || service.priority}
                 </span>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500 flex-wrap">
-                <span className="font-mono text-[10px] sm:text-xs text-blue-600 font-bold">{service.id}</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="truncate">{service.clientName}</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="flex items-center gap-1 flex-shrink-0">
-                  <div className={`w-2 h-2 rounded-full ${statusCfg.color}`} />
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 flex-wrap">
+                <span className="font-mono text-blue-600 font-bold">{service.id}</span>
+                <span className="text-gray-300">•</span>
+                <span className="truncate flex items-center gap-1"><Building size={12}/> {service.clientName}</span>
+                <span className="text-gray-300">•</span>
+                <span className="flex items-center gap-1.5 flex-shrink-0 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 font-medium">
+                  <div className={`w-1.5 h-1.5 rounded-full ${statusCfg.color}`} />
                   {statusCfg.label}
                 </span>
               </div>
@@ -196,16 +196,16 @@ export default function ServiceDetailPage({ params }) {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             {editMode ? (
               <>
-                <button onClick={() => setEditMode(false)} className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-center">Cancel</button>
-                <button onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
+                <button onClick={() => setEditMode(false)} className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-center">Cancel</button>
+                <button onClick={handleSave} disabled={saving} className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1.5">
                   <Save size={14} />
                   {saving ? "Saving..." : "Save"}
                 </button>
               </>
             ) : (
-              <button onClick={() => setEditMode(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer">
+              <button onClick={() => setEditMode(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors cursor-pointer shadow-sm">
                 <Edit2 size={14} />
-                Edit Service
+                Edit
               </button>
             )}
           </div>
@@ -214,33 +214,33 @@ export default function ServiceDetailPage({ params }) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Progress & Status</h3>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><TrendingUp size={12}/> Progress & Status</h3>
               <div className="flex flex-col sm:flex-row gap-6">
                 <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-700">Completion</span>
-                    <span className="text-lg font-bold text-blue-600">{editMode ? localProgress : service.progress || 0}%</span>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-gray-700">Completion</span>
+                    <span className="text-sm font-bold text-blue-600">{editMode ? localProgress : service.progress || 0}%</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-                    <div className="h-full bg-blue-600 rounded-full transition-all duration-500" style={{ width: `${editMode ? localProgress : service.progress || 0}%` }} />
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-2">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${editMode ? localProgress : service.progress || 0}%` }} />
                   </div>
                   {editMode && (
-                    <input type="range" min="0" max="100" value={localProgress} onChange={e => setLocalProgress(Number(e.target.value))} className="w-full accent-blue-600 cursor-pointer" />
+                    <input type="range" min="0" max="100" value={localProgress} onChange={e => setLocalProgress(Number(e.target.value))} className="w-full accent-blue-600 cursor-pointer h-1" />
                   )}
-                  <p className="text-xs text-gray-400 mt-1">Stage: {service.currentStage || "Not Started"}</p>
+                  <p className="text-[11px] font-medium text-gray-500 mt-2">Stage: <span className="text-gray-900">{service.currentStage || "Not Started"}</span></p>
                 </div>
 
                 {/* Status */}
-                <div className="min-w-[180px]">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Status</p>
+                <div className="min-w-[150px]">
+                  <p className="text-xs font-semibold text-gray-700 mb-1.5">Current Status</p>
                   {editMode ? (
-                    <select value={localStatus} onChange={e => setLocalStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
+                    <select value={localStatus} onChange={e => setLocalStatus(e.target.value)} className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm focus:outline-none cursor-pointer">
                       {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   ) : (
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold`}>
-                      <div className={`w-2 h-2 rounded-full ${statusCfg.color}`} />
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded border border-gray-200 text-xs font-semibold bg-gray-50`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${statusCfg.color}`} />
                       {statusCfg.label}
                     </span>
                   )}
@@ -249,92 +249,121 @@ export default function ServiceDetailPage({ params }) {
             </div>
 
             {/* Service Info */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Service Information</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><Tag size={12}/> Service Information</h3>
+              <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Service Name</p>
-                  <p className="font-semibold text-gray-900">{service.serviceName}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Service Name</p>
+                  <p className="font-medium text-gray-900">{service.serviceName}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Client</p>
-                  <p className="font-semibold text-gray-900">{service.clientName}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Client</p>
+                  <p className="font-medium text-gray-900 flex items-center gap-1"><Building size={12} className="text-gray-400"/> {service.clientName}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Category</p>
-                  <p className="font-semibold text-gray-900">{service.category || "—"}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Category</p>
+                  <p className="font-medium text-gray-900">{service.category || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Priority</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Priority</p>
                   {editMode && isManager ? (
-                    <select value={localPriority} onChange={e => setLocalPriority(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
+                    <select value={localPriority} onChange={e => setLocalPriority(e.target.value)} className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm focus:outline-none cursor-pointer">
                       {Object.entries(PRIORITY_CONFIG).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
                     </select>
                   ) : (
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${PRIORITY_CONFIG[service.priority]?.className || "bg-gray-100 text-gray-600"}`}>
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${PRIORITY_CONFIG[service.priority]?.className || "bg-gray-100 text-gray-600 border-gray-200"}`}>
                       {PRIORITY_CONFIG[service.priority]?.label || service.priority}
                     </span>
                   )}
                 </div>
                 <div className="col-span-2">
-                  <p className="text-xs text-gray-400 font-medium mb-1">Description</p>
-                  <p className="text-gray-700 leading-relaxed">{service.description || <span className="text-gray-400 italic">No description provided</span>}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-1 uppercase tracking-wider">Description</p>
+                  <p className="text-gray-700 text-xs leading-relaxed">{service.description || <span className="text-gray-400 italic">No description provided</span>}</p>
                 </div>
               </div>
             </div>
 
             {/* Assignment */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Assignment</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><User size={12}/> Assignment</h3>
+              <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Assigned To</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Assigned To</p>
                   {editMode && isManager ? (
                     <select value={localAssignedTo} onChange={e => {
                       const sel = users.find(u => u.id === e.target.value);
                       setLocalAssignedTo(e.target.value);
                       setLocalAssignedToName(sel?.name || "");
-                    }} className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
+                    }} className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm focus:outline-none cursor-pointer">
                       <option value="">— Unassigned —</option>
                       {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
                   ) : (
-                    <p className="font-semibold text-gray-900">{service.assignedToName || <span className="text-gray-400 italic">Unassigned</span>}</p>
+                    <div className="font-medium text-gray-900 flex items-center gap-1.5">
+                      <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[9px] font-bold border border-blue-100">
+                        {service.assignedToName?.charAt(0)?.toUpperCase() || "?"}
+                      </div>
+                      {service.assignedToName || <span className="text-gray-400 italic">Unassigned</span>}
+                    </div>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Assigned By</p>
-                  <p className="font-semibold text-gray-900">{service.assignedByName || "—"}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Assigned By</p>
+                  <p className="font-medium text-gray-900">{service.assignedByName || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Assigned On</p>
-                  <p className="font-semibold text-gray-900">{formatDate(service.assignedAt)}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Assigned On</p>
+                  <p className="font-medium text-gray-900">{formatDate(service.assignedAt)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Created By</p>
-                  <p className="font-semibold text-gray-900">{service.createdByName || "—"}</p>
+                  <p className="text-[11px] text-gray-500 font-semibold mb-0.5 uppercase tracking-wider">Created By</p>
+                  <p className="font-medium text-gray-900">{service.createdByName || "—"}</p>
                 </div>
               </div>
             </div>
 
+            {/* Attachments Section (NEW) */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5"><FileText size={12}/> Attachments</h3>
+              {(!service.attachments || service.attachments.length === 0) ? (
+                <div className="flex items-center justify-center py-4 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                  <p className="text-xs text-gray-400 font-medium">No attachments provided</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {service.attachments.map((file, idx) => (
+                    <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 p-2 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
+                      <div className="w-8 h-8 rounded bg-gray-50 text-gray-500 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                        <FileText size={14} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-gray-900 truncate">{file.name}</p>
+                        <p className="text-[9px] font-medium text-gray-500 uppercase tracking-wider">{(file.size / 1024).toFixed(1)} KB • {formatDate(file.uploadedAt)}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Add Comment */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Add Update / Comment</h3>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><MessageSquare size={12}/> Add Update / Comment</h3>
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                <div className="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold flex-shrink-0 border border-blue-100 mt-1">
                   {user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
                 <div className="flex-1">
                   <textarea
                     value={comment}
                     onChange={e => setComment(e.target.value)}
-                    rows={3}
-                    placeholder="Add a comment, update, or note about this service..."
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                    rows={2}
+                    placeholder="Add a comment, update, or note..."
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-gray-300 transition-all resize-none"
                   />
                   <div className="flex justify-end mt-2">
-                    <button onClick={handleAddComment} disabled={!comment.trim() || savingComment} className="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer">
-                      {savingComment ? "Posting..." : "Post Comment"}
+                    <button onClick={handleAddComment} disabled={!comment.trim() || savingComment} className="px-4 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 cursor-pointer">
+                      {savingComment ? "Posting..." : "Post"}
                     </button>
                   </div>
                 </div>
@@ -342,90 +371,98 @@ export default function ServiceDetailPage({ params }) {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className={`bg-white rounded-xl border shadow-sm p-5 ${
-              daysRemaining !== null && daysRemaining < 0 ? "border-red-200 bg-red-50/30" :
-              daysRemaining !== null && daysRemaining <= 2 ? "border-orange-200 bg-orange-50/30" :
-              "border-gray-200"
+          <div className="space-y-6">
+            <div className={`rounded-xl border shadow-sm p-4 ${
+              daysRemaining !== null && daysRemaining < 0 ? "border-red-200 bg-red-50/80" :
+              daysRemaining !== null && daysRemaining <= 2 ? "border-orange-200 bg-orange-50/80" :
+              "border-gray-200 bg-white"
             }`}>
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Deadline</h3>
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Clock size={12}/> Deadline</h3>
               {service.dueDate ? (
-                <>
-                  <p className="text-lg font-bold text-gray-900 mb-1">{formatDate(service.dueDate)}</p>
+                <div>
+                  <p className="text-xl font-bold text-gray-900 mb-2">{formatDate(service.dueDate)}</p>
                   {daysRemaining !== null && (
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                      daysRemaining < 0 ? "bg-red-100 text-red-700" :
-                      daysRemaining <= 2 ? "bg-orange-100 text-orange-700" :
-                      "bg-emerald-100 text-emerald-700"
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-bold ${
+                      daysRemaining < 0 ? "bg-red-600 text-white" :
+                      daysRemaining <= 2 ? "bg-orange-500 text-white" :
+                      "bg-emerald-50 text-emerald-700 border border-emerald-100"
                     }`}>
                       {daysRemaining < 0 ? <AlertTriangle size={12} /> : <Clock size={12} />}
-                      {daysRemaining < 0 ? `${Math.abs(daysRemaining)}d Overdue` :
-                       daysRemaining === 0 ? "Due Today" :
+                      {daysRemaining < 0 ? `${Math.abs(daysRemaining)} Days Overdue` :
+                       daysRemaining === 0 ? "Due Today!" :
                        `${daysRemaining} days remaining`}
                     </div>
                   )}
                   {editMode && isManager && (
                     <div className="mt-3">
-                      <input type="date" value={localDueDate} onChange={e => setLocalDueDate(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer" />
+                      <input type="date" value={localDueDate} onChange={e => setLocalDueDate(e.target.value)} className="w-full px-2 py-1 bg-white border border-gray-200 rounded text-sm focus:outline-none cursor-pointer" />
                     </div>
                   )}
-                </>
+                </div>
               ) : (
-                <p className="text-gray-400 italic text-sm">No deadline set</p>
+                <div className="flex items-center gap-2 text-gray-400 bg-gray-50/50 p-2 rounded-lg border border-gray-100">
+                  <Calendar size={14} />
+                  <p className="text-xs font-medium">No deadline set</p>
+                </div>
               )}
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Quick Info</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 flex items-center gap-1.5"><Calendar size={14} /> Created</span>
-                  <span className="font-semibold text-gray-800">{formatDate(service.createdAt)}</span>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Activity size={12}/> Quick Info</h3>
+              <div className="space-y-3 text-[13px]">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <span className="text-gray-500 flex items-center gap-1.5 font-medium"><Calendar size={12} className="text-gray-400"/> Created</span>
+                  <span className="font-semibold text-gray-900">{formatDate(service.createdAt)}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <span className="text-gray-500 flex items-center gap-1.5 font-medium"><Activity size={12} className="text-gray-400"/> Updated</span>
+                  <span className="font-semibold text-gray-900">{formatDate(service.updatedAt)}</span>
+                </div>
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <span className="text-gray-500 flex items-center gap-1.5 font-medium"><TrendingUp size={12} className="text-blue-500"/> Progress</span>
+                  <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{service.progress || 0}%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 flex items-center gap-1.5"><Activity size={14} /> Last Updated</span>
-                  <span className="font-semibold text-gray-800">{formatDate(service.updatedAt)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 flex items-center gap-1.5"><TrendingUp size={14} /> Progress</span>
-                  <span className="font-bold text-blue-600">{service.progress || 0}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 flex items-center gap-1.5"><MessageSquare size={14} /> Activities</span>
-                  <span className="font-semibold text-gray-800">{service.activity?.length || 0}</span>
+                  <span className="text-gray-500 flex items-center gap-1.5 font-medium"><MessageSquare size={12} className="text-purple-500"/> Activities</span>
+                  <span className="font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">{service.activity?.length || 0}</span>
                 </div>
               </div>
             </div>
 
             {/* Activity Timeline */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100">
-                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Activity Timeline</h3>
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[400px]">
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50/50">
+                <h3 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5"><Clock size={12}/> Activity Timeline</h3>
               </div>
-              <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto">
+              <div className="p-6 flex-1 overflow-y-auto">
                 {(!service.activity || service.activity.length === 0) ? (
-                  <p className="text-xs text-gray-400 text-center py-6">No activity yet</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center">
+                    <Activity className="text-gray-200 mb-3" size={32} />
+                    <p className="text-sm font-medium text-gray-400">No activity yet</p>
+                  </div>
                 ) : (
-                  service.activity.map((a, idx) => {
-                    const cfg = ACTIVITY_ICONS[a.type] || ACTIVITY_ICONS.comment;
-                    const Icon = cfg.icon;
-                    return (
-                      <div key={a.id || idx} className="flex gap-3">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${cfg.color}`}>
-                          <Icon size={12} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-700 leading-relaxed">{a.message}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-gray-400 font-medium">{a.performedByName || "System"}</span>
-                            <span className="text-[10px] text-gray-300">•</span>
-                            <span className="text-[10px] text-gray-400">{formatDateTime(a.createdAt)}</span>
+                  <div className="relative border-l-2 border-gray-100 ml-3 space-y-6">
+                    {service.activity.map((a, idx) => {
+                      const cfg = ACTIVITY_ICONS[a.type] || ACTIVITY_ICONS.comment;
+                      const Icon = cfg.icon;
+                      return (
+                        <div key={a.id || idx} className="relative pl-6">
+                          <div className={`absolute -left-[15px] top-0.5 w-7 h-7 rounded-full flex items-center justify-center border-4 border-white ${cfg.color} shadow-sm`}>
+                            <Icon size={12} />
+                          </div>
+                          <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all group">
+                            <p className="text-sm text-gray-800 font-medium leading-relaxed">{a.message}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{a.performedByName || "System"}</span>
+                              <span className="text-[10px] text-gray-300">•</span>
+                              <span className="text-[10px] text-gray-400 font-medium">{formatDateTime(a.createdAt)}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>

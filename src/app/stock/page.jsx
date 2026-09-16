@@ -11,7 +11,7 @@ import {
   Filter, ChevronDown, Scale, TrendingUp, TrendingDown,
   Layers, ArrowUpCircle, ArrowDownCircle, Boxes,
   FileText, ExternalLink, Eye, Download, Camera, Video,
-} from "lucide-react";
+} from "lucide-react"; 
 import api from "@/services/api";
 import DataTable from "@/components/common/DataTable";
 import { useAuth } from "@/context/AuthContext";
@@ -1082,7 +1082,7 @@ export default function StockPage() {
         )}
       </div>
 
-      <div className="px-3 sm:px-6 py-2 sm:py-3 space-y-2 max-w-7xl mx-auto">
+      <div className="px-3 sm:px-6 py-2 sm:py-3 space-y-2 mx-auto">
 
         <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <KpiCard icon={ClipboardList} label="Gate Entries"  value={kpiGate}  color="blue"

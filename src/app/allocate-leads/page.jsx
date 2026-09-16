@@ -11,6 +11,7 @@ import api from "@/services/api";
 import DataTable from "@/components/common/DataTable";
 
 const SOURCES = ["manual","excel","website","tradeindia","justdial","google-ads"];
+const LEAD_TYPES = ["ISI Certificate","BIS Hallmarking","BIS CRS","Machine & Lab Equipment","Food Ingredients"];
 const PAGE_SIZE = 50;
 
 const ALL_ALLOCATE_COLUMNS = [
@@ -22,6 +23,7 @@ const ALL_ALLOCATE_COLUMNS = [
   { key: "email", label: "Email" },
   { key: "source", label: "Source" },
   { key: "state", label: "Location" },
+  { key: "leadType", label: "Lead Type" },
   { key: "productInterest", label: "Services" },
   { key: "status", label: "Status" },
   { key: "assignedTo", label: "Assigned To" },
@@ -35,7 +37,7 @@ export default function AllocateLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(new Set());
 
-  const [filters, setFilters] = useState({ status: "unallocated", source: "", state: "", productInterest: "", search: "", assignedTo: "" });
+  const [filters, setFilters] = useState({ status: "unallocated", source: "", state: "", productInterest: "", search: "", assignedTo: "", leadType: "" });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
@@ -47,11 +49,13 @@ export default function AllocateLeadsPage() {
 
   const [form, setForm] = useState({
     name: "", phone: "", email: "", companyName: "",
-    source: "manual", city: "", state: "", productInterest: "", notes: "",
+    source: "manual", city: "", state: "", productInterest: "", leadType: "", notes: "",
   });
 
   const [importRows, setImportRows]       = useState([]);
   const [importPreview, setImportPreview] = useState([]);
+  const [batchLeadType, setBatchLeadType] = useState("");
+  const [importLeadTypeError, setImportLeadTypeError] = useState(false);
   const [importing, setImporting]         = useState(false);
   const [deleteTarget, setDeleteTarget]   = useState(null);
   const [deleting, setDeleting]           = useState(false);
@@ -175,11 +179,16 @@ export default function AllocateLeadsPage() {
 
   const submitImport = async () => {
     if (!importRows.length) return;
+    if (!batchLeadType) {
+      setImportLeadTypeError(true);
+      return;
+    }
+    setImportLeadTypeError(false);
     setImporting(true);
     try {
-      const res = await api.post("/api/leads/import", { leads: importRows });
+      const res = await api.post("/api/leads/import", { leads: importRows, batchLeadType });
       showToast(`Imported ${res.data.imported} leads. Duplicates: ${res.data.duplicates}`);
-      setModal(null); setImportRows([]); setImportPreview([]);
+      setModal(null); setImportRows([]); setImportPreview([]); setBatchLeadType(""); setImportLeadTypeError(false);
       fetchLeads(); fetchStats();
     } catch {
       showToast("Import failed", "error");
@@ -188,7 +197,7 @@ export default function AllocateLeadsPage() {
   };
 
   const setFilter = (k, v) => { setFilters((prev) => ({ ...prev, [k]: v })); setPage(1); };
-  const clearFilters = () => { setFilters({ status: "unallocated", source: "", state: "", productInterest: "", search: "", assignedTo: "" }); setPage(1); };
+  const clearFilters = () => { setFilters({ status: "unallocated", source: "", state: "", productInterest: "", search: "", assignedTo: "", leadType: "" }); setPage(1); };
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== "status").length;
   const totalPages = Math.ceil(total / pageSize);
 
@@ -228,6 +237,20 @@ export default function AllocateLeadsPage() {
       ),
     },
     { label: "Location", key: "state" },
+    {
+      label: "Lead Type",
+      key: "leadType",
+      render: (lead) => lead.leadType ? (
+        <span className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
+          lead.leadType === "ISI Certificate"        ? "bg-blue-100 text-blue-700"    :
+          lead.leadType === "BIS Hallmarking"        ? "bg-amber-100 text-amber-700"  :
+          lead.leadType === "BIS CRS"                ? "bg-purple-100 text-purple-700":
+          lead.leadType === "Machine & Lab Equipment" ? "bg-teal-100 text-teal-700"  :
+          lead.leadType === "Food Ingredients"       ? "bg-green-100 text-green-700"  :
+          "bg-gray-100 text-gray-600"
+        }`}>{lead.leadType}</span>
+      ) : <span className="text-gray-300 text-xs">—</span>,
+    },
     { label: "Services", key: "productInterest" },
     {
       label: "Status",
@@ -296,6 +319,11 @@ export default function AllocateLeadsPage() {
             onChange={(e) => setFilter("search", e.target.value)}
             className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white" />
         </div>
+        <select value={filters.leadType} onChange={(e) => setFilter("leadType", e.target.value)}
+          className="border border-gray-200 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-700">
+          <option value="">All Lead Types</option>
+          {LEAD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
         <select value={filters.source} onChange={(e) => setFilter("source", e.target.value)}
           className="border border-gray-200 rounded-lg px-2 sm:px-3 py-2 text-xs sm:text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-gray-900 text-gray-700">
           <option value="">All Sources</option>
@@ -443,6 +471,15 @@ export default function AllocateLeadsPage() {
                   onChange={(e) => setForm({ ...form, productInterest: e.target.value })}
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
               </div>
+              {/* Lead Type */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Lead Type *</label>
+                <select value={form.leadType} onChange={(e) => setForm({ ...form, leadType: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white cursor-pointer">
+                  <option value="">Select Lead Type</option>
+                  {LEAD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
               {/* Notes */}
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Notes</label>
@@ -464,7 +501,7 @@ export default function AllocateLeadsPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-gray-900">Import Leads from Excel</h2>
-              <button onClick={() => { setModal(null); setImportRows([]); setImportPreview([]); }}
+              <button onClick={() => { setModal(null); setImportRows([]); setImportPreview([]); setBatchLeadType(""); setImportLeadTypeError(false); }}
                 className="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 cursor-pointer"><X size={18} /></button>
             </div>
             <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
@@ -475,6 +512,23 @@ export default function AllocateLeadsPage() {
               <button onClick={downloadTemplate} className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 font-medium cursor-pointer">
                 <Download size={14} /> Template
               </button>
+            </div>
+            {/* Lead Type for batch */}
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Lead Type <span className="text-gray-400 font-normal">(select before importing)</span></label>
+              <select
+                value={batchLeadType}
+                onChange={(e) => { setBatchLeadType(e.target.value); setImportLeadTypeError(false); }}
+                className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white cursor-pointer ${
+                  importLeadTypeError ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                }`}
+              >
+                <option value="">— Select Lead Type —</option>
+                {LEAD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {importLeadTypeError && (
+                <p className="text-xs text-red-500 mt-1">Please select a lead type before importing.</p>
+              )}
             </div>
             <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center mb-4 hover:border-gray-300 transition-colors">
               <Upload size={28} className="mx-auto text-gray-300 mb-2" />
@@ -508,11 +562,11 @@ export default function AllocateLeadsPage() {
               </div>
             )}
             <div className="flex gap-3">
-              <button onClick={() => { setModal(null); setImportRows([]); setImportPreview([]); }}
+              <button onClick={() => { setModal(null); setImportRows([]); setImportPreview([]); setBatchLeadType(""); setImportLeadTypeError(false); }}
                 className="flex-1 py-2.5 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 text-sm font-medium cursor-pointer">Cancel</button>
               <button onClick={submitImport} disabled={!importRows.length || importing}
                 className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-700 disabled:opacity-40 rounded-xl text-white text-sm font-medium cursor-pointer">
-                {importing ? "Importing..." : `Import ${importRows.length} Leads`}
+                {importing ? "Importing..." : importRows.length > 0 ? `Import ${importRows.length} Leads` : "Import Leads"}
               </button>
             </div>
           </div>
