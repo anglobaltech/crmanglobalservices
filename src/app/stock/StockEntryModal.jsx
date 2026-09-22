@@ -13,13 +13,13 @@ const Field = ({ label, children, required }) => (
 );
 
 const Input = (props) => (
-  <input {...props}
+  <input {...props} value={props.value ?? ""}
     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-300"
   />
 );
 
 const Textarea = (props) => (
-  <textarea {...props} rows={2}
+  <textarea {...props} value={props.value ?? ""} rows={2}
     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-300 resize-none"
   />
 );
@@ -117,20 +117,23 @@ const SectionBlock = ({ num, title, children, color = "emerald" }) => {
   );
 };
 
-export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }) {
+export default function StockEntryModal({ editEntry, onClose, onCreated, gateEntries = [] }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const [form, setForm] = useState({
-    invoiceNumber: "", billFrom: "", billTo: "", productName: "", batchNumber: "",
-    totalBilledQty: "", approvedQty: "", rejectedQty: "",
-    rejectionReason: "", rejectedItemPhoto: null, rejectedItemVideo: null,
-    witnessName: "", witnessPhone: "",
-    otherPartyName: "", otherPartyPhone: "", otherPartyRole: "seller",
-    gateEntryRef: "",
-    entryDate: new Date().toISOString().split("T")[0],
-    remarks: "",
+  const [form, setForm] = useState(() => {
+    if (editEntry) return { ...editEntry };
+    return {
+      invoiceNumber: "", billFrom: "", billTo: "", productName: "", batchNumber: "",
+      totalBilledQty: "", approvedQty: "", rejectedQty: "",
+      rejectionReason: "", rejectedItemPhoto: null, rejectedItemVideo: null,
+      witnessName: "", witnessPhone: "",
+      otherPartyName: "", otherPartyPhone: "", otherPartyRole: "seller",
+      gateEntryRef: "",
+      entryDate: new Date().toISOString().split("T")[0],
+      remarks: "",
+    };
   });
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
@@ -155,7 +158,7 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
     setSaving(true); setError("");
 
     try {
-      const tempId = `SE-TEMP-${Date.now()}`;
+      const tempId = editEntry ? editEntry.stockEntryId : `SE-TEMP-${Date.now()}`;
       const folder = `stockmanagement/stockentry/${tempId}`;
       const uploadedUrls = {};
 
@@ -176,11 +179,16 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
 
       const payload = {
         ...form,
-        rejectedItemPhoto: uploadedUrls.rejectedItemPhoto || null,
-        rejectedItemVideo: uploadedUrls.rejectedItemVideo || null,
+        rejectedItemPhoto: "rejectedItemPhoto" in uploadedUrls ? uploadedUrls.rejectedItemPhoto : form.rejectedItemPhoto || null,
+        rejectedItemVideo: "rejectedItemVideo" in uploadedUrls ? uploadedUrls.rejectedItemVideo : form.rejectedItemVideo || null,
       };
 
-      await api.post("/api/stock/entries", payload);
+      if (editEntry) {
+        await api.patch(`/api/stock/entries/${editEntry.id}`, payload);
+      } else {
+        await api.post("/api/stock/entries", payload);
+      }
+      
       onCreated?.(); onClose();
     } catch (err) {
       setUploading(false);
@@ -200,7 +208,7 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
               <PackageCheck size={15} className="text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">New Stock Entry</h2>
+              <h2 className="text-sm font-bold text-gray-900">{editEntry ? "Edit Stock Entry" : "New Stock Entry"}</h2>
               <p className="text-[10px] text-gray-400">Invoice, quantities & inspection</p>
             </div>
           </div>
@@ -340,7 +348,7 @@ export default function StockEntryModal({ onClose, onCreated, gateEntries = [] }
           <button onClick={handleSubmit} disabled={saving || uploading}
             className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
           >
-            {uploading ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : "Save Stock Entry"}
+            {uploading ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : editEntry ? "Update Stock Entry" : "Save Stock Entry"}
           </button>
         </div>
       </div>

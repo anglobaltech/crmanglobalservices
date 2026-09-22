@@ -40,6 +40,7 @@ const Field = ({ label, children, required, hint }) => (
 const Input = ({ highlight, ...props }) => (
   <input
     {...props}
+    value={props.value ?? ""}
     className={`w-full border rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-300 transition-colors ${
       highlight
         ? "border-blue-300 bg-blue-50/40 focus:ring-blue-400"
@@ -51,6 +52,7 @@ const Input = ({ highlight, ...props }) => (
 const Textarea = (props) => (
   <textarea
     {...props}
+    value={props.value ?? ""}
     rows={2}
     className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-300 resize-none"
   />
@@ -163,14 +165,25 @@ const AutoFillPill = ({ text }) => (
 );
 
 
-export default function GateEntryModal({ onClose, onCreated }) {
+export default function GateEntryModal({ editEntry, onClose, onCreated }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState({});
   const [error, setError] = useState("");
   const pendingFiles = useRef({});
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => {
+    if (editEntry) {
+      return { 
+        ...editEntry, 
+        importedByOther: editEntry.importedByOther || editEntry.importedBy || "",
+        companyInvoiceNumber: editEntry.companyInvoiceDetails || editEntry.invoiceDocNumber || "",
+        companyEwayNumber: editEntry.ewayBillDetails || editEntry.ewayBillNumber || "",
+        invoiceFilledNumber: editEntry.invoiceDocNumber || "",
+        ewayFilledNumber: editEntry.ewayBillNumber || ""
+      };
+    }
+    return {
     invoiceDocNumber: "",
     invoiceDocPresent: null,
     invoiceFilledNumber: "",    
@@ -209,7 +222,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
     productPhoto: null,
 
     entryDate: new Date().toISOString().split("T")[0],
-    remarks: "",
+    };
   });
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
@@ -248,8 +261,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
     if (!form.productName) { setError("Product name is required."); return; }
     setSaving(true); setError("");
     try {
-    
-      const tempId = `GE-TEMP-${Date.now()}`;
+      const tempId = editEntry ? editEntry.gateEntryId : `GE-TEMP-${Date.now()}`;
       const folder = `stockmanagement/gateentry/${tempId}`;
 
       const mediaKeys = ["driverPhoto", "gateOpeningVideo", "productPhoto", "productVideo", "coaFile"];
@@ -287,10 +299,10 @@ export default function GateEntryModal({ onClose, onCreated }) {
         itemBatchNumber: form.itemBatchNumber || null,
         coaAvailable: form.coaAvailable,
         coaDetails: form.coaDetails || null,
-        coaFile: uploadedUrls.coaFile || null,
+        coaFile: "coaFile" in uploadedUrls ? uploadedUrls.coaFile : form.coaFile || null,
         productName: form.productName,
         packagingDetails: form.packagingDetails || null,
-        importedBy: form.importedBy === "Others" ? (form.importedByOther || "Others") : (form.importedBy || null),
+        importedBy: form.importedByOther || null,
         productMatchesInvoice: form.productMatchesInvoice,
         productMatchesEway: form.productMatchesEway,
         gstNumberSeller: form.gstNumberSeller || null,
@@ -300,14 +312,20 @@ export default function GateEntryModal({ onClose, onCreated }) {
         transporterGst: form.transporterGst || null,
         driverName: form.driverName || null,
         driverPhone: form.driverPhone || null,
-        driverPhoto: uploadedUrls.driverPhoto || null,
-        gateOpeningVideo: uploadedUrls.gateOpeningVideo || null,
-        productVideo: uploadedUrls.productVideo || null,
-        productPhoto: uploadedUrls.productPhoto || null,
+        driverPhoto: "driverPhoto" in uploadedUrls ? uploadedUrls.driverPhoto : form.driverPhoto || null,
+        gateOpeningVideo: "gateOpeningVideo" in uploadedUrls ? uploadedUrls.gateOpeningVideo : form.gateOpeningVideo || null,
+        productVideo: "productVideo" in uploadedUrls ? uploadedUrls.productVideo : form.productVideo || null,
+        productPhoto: "productPhoto" in uploadedUrls ? uploadedUrls.productPhoto : form.productPhoto || null,
         remarks: form.remarks || null,
         entryDate: form.entryDate,
       };
-      await api.post("/api/stock/gate-entries", payload);
+      
+      if (editEntry) {
+        await api.patch(`/api/stock/gate-entries/${editEntry.id}`, payload);
+      } else {
+        await api.post("/api/stock/gate-entries", payload);
+      }
+      
       onCreated?.(); onClose();
     } catch (err) {
       setUploading({});
@@ -327,7 +345,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
               <ClipboardList size={15} className="text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">New Gate Entry</h2>
+              <h2 className="text-sm font-bold text-gray-900">{editEntry ? "Edit Gate Entry" : "New Gate Entry"}</h2>
               <p className="text-[10px] text-gray-400">{step === 1 ? "Step 1 of 2 — Checklist" : "Step 2 of 2 — Transport"}</p>
             </div>
           </div>
@@ -648,7 +666,7 @@ export default function GateEntryModal({ onClose, onCreated }) {
             <button onClick={handleSubmit} disabled={saving || !!(uploading.all)}
               className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
             >
-              {uploading.all ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : "Save Gate Entry"}
+              {uploading.all ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : editEntry ? "Update Gate Entry" : "Save Gate Entry"}
             </button>
           )}
         </div>

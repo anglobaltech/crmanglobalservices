@@ -277,7 +277,7 @@ function MediaCard({ label, url, isVideo, onView }) {
   );
 }
 
-function DetailModal({ entry, type, onClose }) {
+function DetailModal({ entry, type, onClose, onEdit }) {
   const [lightbox, setLightbox] = useState(null);
   if (!entry) return null;
   const cfg = {
@@ -556,9 +556,14 @@ function DetailModal({ entry, type, onClose }) {
               </>
             )}
           </div>
-          <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0">
+          <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0 flex sm:justify-end flex-col sm:flex-row gap-3">
+            {onEdit && (
+              <button onClick={onEdit}
+                className="w-full sm:w-auto px-6 py-2.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl cursor-pointer transition-colors"
+              >Edit</button>
+            )}
             <button onClick={onClose}
-              className="w-full sm:w-auto sm:float-right px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors"
+              className="w-full sm:w-auto px-6 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-xl cursor-pointer transition-colors"
             >Close</button>
           </div>
         </div>
@@ -894,6 +899,7 @@ export default function StockPage() {
   const [stockEntries, setStockEntries] = useState([]);
   const [stockExits,   setStockExits]   = useState([]);
   const [modal,       setModal]       = useState(null);
+  const [editEntry,   setEditEntry]   = useState(null);
   const [detailEntry, setDetailEntry] = useState(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo,   setDateTo]   = useState("");
@@ -1224,6 +1230,29 @@ export default function StockPage() {
                 {tab === "gate"  && pagedList.map(e => <GateCard  key={e.id} e={e} onClick={openDetail} />)}
                 {tab === "entry" && pagedList.map(e => <EntryCard key={e.id} e={e} onClick={openDetail} />)}
                 {tab === "exit"  && pagedList.map(e => <ExitCard  key={e.id} e={e} onClick={openDetail} />)}
+                
+                {/* Mobile Pagination Controls */}
+                {currentList.length > PAGE_SIZE && (
+                  <div className="flex items-center justify-between pt-2 px-1">
+                    <button 
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg disabled:opacity-50 cursor-pointer hover:bg-gray-50"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-[10px] text-gray-500 font-medium">
+                      Page {page} of {Math.ceil(currentList.length / PAGE_SIZE)}
+                    </span>
+                    <button 
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={page >= Math.ceil(currentList.length / PAGE_SIZE)}
+                      className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg disabled:opacity-50 cursor-pointer hover:bg-gray-50"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1248,13 +1277,22 @@ export default function StockPage() {
       </div>
 
       {/* Create Modals */}
-      {modal === "gate"  && <GateEntryModal  onClose={() => setModal(null)} onCreated={fetchAll} />}
-      {modal === "entry" && <StockEntryModal onClose={() => setModal(null)} onCreated={fetchAll} gateEntries={gateEntries} />} 
-      {modal === "exit"  && <StockExitModal  onClose={() => setModal(null)} onCreated={fetchAll} gateEntries={gateEntries} stockEntries={stockEntries} />}
+      {modal === "gate"  && <GateEntryModal  editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} />}
+      {modal === "entry" && <StockEntryModal editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} gateEntries={gateEntries} />} 
+      {modal === "exit"  && <StockExitModal  editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} gateEntries={gateEntries} stockEntries={stockEntries} />}
 
       {/* Detail Modal */}
       {detailEntry && (
-        <DetailModal entry={detailEntry.entry} type={detailEntry.type} onClose={() => setDetailEntry(null)} />
+        <DetailModal 
+          entry={detailEntry.entry} 
+          type={detailEntry.type} 
+          onClose={() => setDetailEntry(null)} 
+          onEdit={() => {
+            setEditEntry(detailEntry.entry);
+            setModal(detailEntry.type);
+            setDetailEntry(null);
+          }}
+        />
       )}
     </div>
   );

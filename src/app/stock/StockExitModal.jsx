@@ -13,13 +13,13 @@ const Field = ({ label, children, required }) => (
 );
 
 const Input = (props) => (
-  <input {...props}
+  <input {...props} value={props.value ?? ""}
     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-300"
   />
 );
 
 const Textarea = (props) => (
-  <textarea {...props} rows={2}
+  <textarea {...props} value={props.value ?? ""} rows={2}
     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-300 resize-none"
   />
 );
@@ -140,19 +140,22 @@ const SectionBlock = ({ num, title, children, color = "orange" }) => {
   );
 };
 
-export default function StockExitModal({ onClose, onCreated, gateEntries = [], stockEntries = [] }) {
+export default function StockExitModal({ editEntry, onClose, onCreated, gateEntries = [], stockEntries = [] }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
-  const [form, setForm] = useState({
-    buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
-    invoiceDocNumber: "", ewayBillApplicable: null, ewayBillNumber: "",
-    productName: "", batchNumber: "", qtyDispatched: "", packagingType: "",
-    destination: "", stockEntryRef: "", gateEntryRef: "",
-    transportMode: "transporter", transporterName: "", vehicleNumber: "", driverName: "", driverPhone: "", driverId: "",
-    exitDate: new Date().toISOString().split("T")[0], remarks: "",
-    vehiclePhoto: null, itemPhoto: null, itemVideo: null,
+  const [form, setForm] = useState(() => {
+    if (editEntry) return { ...editEntry };
+    return {
+      buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
+      invoiceDocNumber: "", ewayBillApplicable: null, ewayBillNumber: "",
+      productName: "", batchNumber: "", qtyDispatched: "", packagingType: "",
+      destination: "", stockEntryRef: "", gateEntryRef: "",
+      transportMode: "transporter", transporterName: "", vehicleNumber: "", driverName: "", driverPhone: "", driverId: "",
+      exitDate: new Date().toISOString().split("T")[0], remarks: "",
+      vehiclePhoto: null, itemPhoto: null, itemVideo: null,
+    };
   });
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
@@ -175,7 +178,7 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
     setSaving(true); setError("");
 
     try {
-      const tempId = `SX-TEMP-${Date.now()}`;
+      const tempId = editEntry ? editEntry.stockExitId : `SX-TEMP-${Date.now()}`;
       const folder = `stockmanagement/stockexit/${tempId}`;
       const uploadedUrls = {};
 
@@ -196,12 +199,17 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
 
       const payload = {
         ...form,
-        vehiclePhoto: uploadedUrls.vehiclePhoto || null,
-        itemPhoto: uploadedUrls.itemPhoto || null,
-        itemVideo: uploadedUrls.itemVideo || null,
+        vehiclePhoto: "vehiclePhoto" in uploadedUrls ? uploadedUrls.vehiclePhoto : form.vehiclePhoto || null,
+        itemPhoto: "itemPhoto" in uploadedUrls ? uploadedUrls.itemPhoto : form.itemPhoto || null,
+        itemVideo: "itemVideo" in uploadedUrls ? uploadedUrls.itemVideo : form.itemVideo || null,
       };
 
-      await api.post("/api/stock/exits", payload);
+      if (editEntry) {
+        await api.patch(`/api/stock/exits/${editEntry.id}`, payload);
+      } else {
+        await api.post("/api/stock/exits", payload);
+      }
+      
       onCreated?.(); onClose();
     } catch (err) {
       setUploading(false);
@@ -221,7 +229,7 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
               <TruckIcon size={15} className="text-white" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-gray-900">New Stock Exit</h2>
+              <h2 className="text-sm font-bold text-gray-900">{editEntry ? "Edit Stock Exit" : "New Stock Exit"}</h2>
               <p className="text-[10px] text-gray-400">Record goods leaving the warehouse</p>
             </div>
           </div>
@@ -368,7 +376,7 @@ export default function StockExitModal({ onClose, onCreated, gateEntries = [], s
           <button onClick={handleSubmit} disabled={saving || uploading}
             className="px-5 py-2 bg-orange-600 text-white text-xs font-semibold rounded-lg hover:bg-orange-700 cursor-pointer disabled:opacity-60 transition-colors flex items-center gap-1.5"
           >
-            {uploading ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : "Save Stock Exit"}
+            {uploading ? <><Loader2 size={11} className="animate-spin" /> Uploading...</> : saving ? "Saving..." : editEntry ? "Update Stock Exit" : "Save Stock Exit"}
           </button>
         </div>
       </div>
