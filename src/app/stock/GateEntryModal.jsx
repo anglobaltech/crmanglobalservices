@@ -205,6 +205,7 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
     coaFileName: "",
     productName: "",
     packagingDetails: "",
+    quantityKg: "",
     importedBy: "",
     importedByOther: "",
     productMatchesInvoice: null,
@@ -302,6 +303,7 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
         coaFile: "coaFile" in uploadedUrls ? uploadedUrls.coaFile : form.coaFile || null,
         productName: form.productName,
         packagingDetails: form.packagingDetails || null,
+        quantityKg: form.quantityKg ? Number(form.quantityKg) : null,
         importedBy: form.importedByOther || null,
         productMatchesInvoice: form.productMatchesInvoice,
         productMatchesEway: form.productMatchesEway,
@@ -530,6 +532,23 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
                 </Field>
                 <Field label="Packaging Details">
                   <Input placeholder="e.g. 50kg bags, 200 units" value={form.packagingDetails} onChange={e => set("packagingDetails", e.target.value)} />
+                </Field>
+
+                {/* Quantity received at gate */}
+                <Field label="Quantity Received at Gate (kg)" hint="For record only — not added to stock inventory">
+                  <div className="flex">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={form.quantityKg}
+                      onChange={e => set("quantityKg", e.target.value)}
+                      style={{ borderRadius: "0.5rem 0 0 0.5rem", borderRight: "none" }}
+                    />
+                    <span className="flex items-center px-3 bg-gray-100 border border-gray-200 rounded-r-lg text-xs font-bold text-gray-500 flex-shrink-0">
+                      kg
+                    </span>
+                  </div>
                 </Field>
 
                 {/* Imported By */}

@@ -82,6 +82,7 @@ const GATE_COLS = [
   { key: "gateEntryId",            label: "ID" },
   { key: "productName",            label: "Product" },
   { key: "itemBatchNumber",        label: "Batch No." },
+  { key: "quantityKg",             label: "Qty (kg)" },
   { key: "vehicleNumber",          label: "Vehicle" },
   { key: "transporterName",        label: "Transporter" },
   { key: "invoiceDocPresent",      label: "Invoice" },
@@ -125,7 +126,7 @@ const initCols = (defs) => defs.map(c => c.key);
 
 const YES_NO_KEYS = new Set(["invoiceDocPresent","ewayBillPresent","fssaiLicenseApplicable","coaAvailable",
   "invoiceMatchesEway","vehicleNumberMatch","productMatchesInvoice","productMatchesEway","transporterReceiptMatch"]);
-const KG_KEYS     = new Set(["totalBilledQty","approvedQty","rejectedQty","qtyDispatched"]);
+const KG_KEYS     = new Set(["totalBilledQty","approvedQty","rejectedQty","qtyDispatched","quantityKg"]);
 const DATE_KEYS   = new Set(["entryDate","exitDate","createdAt"]);
 const ID_COLOR    = { gateEntryId: "blue", stockEntryId: "green", stockExitId: "orange" };
 
@@ -359,6 +360,7 @@ function DetailModal({ entry, type, onClose, onEdit }) {
                 <Row label="Product Name"   value={entry.productName} />
                 <Row label="Packaging"      value={entry.packagingDetails} />
                 <Row label="Batch No."      value={entry.itemBatchNumber} />
+                <Row label="Gate Qty (kg)"  value={entry.quantityKg != null ? `${Number(entry.quantityKg).toLocaleString()} kg` : null} />
                 <Row label="Imported By"    value={entry.importedByOther || entry.importedBy} />
               </Sec>
 
