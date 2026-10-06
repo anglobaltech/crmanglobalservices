@@ -15,13 +15,36 @@ export function AuthProvider({ children }) {
     window.location.href = "/login";
   };
 
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return null;
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error("JWT Parse Error", e);
+      return null;
+    }
+  };
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem("crm_user");
       const token = localStorage.getItem("crm_token");
       
       if (stored && token) {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = parseJwt(token);
+        if (!payload || !payload.exp) {
+          logout();
+          return;
+        }
+
         const timeUntilExpiry = (payload.exp * 1000) - Date.now();
         
         if (timeUntilExpiry <= 0) {
