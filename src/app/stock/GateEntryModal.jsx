@@ -58,16 +58,12 @@ const Textarea = (props) => (
   />
 );
 
-async function uploadToFirebase(file, path) {
-  const storageRef = ref(storage, path);
-  return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file);
-    task.on("state_changed", null, reject, async () => {
-      const url = await getDownloadURL(storageRef);
-      resolve(url);
-    });
-  });
-}
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = error => reject(error);
+});
 
 const FileUpload = ({ label, value, onChange, accept, hint, fileName, uploading }) => (
   <div>
@@ -262,23 +258,15 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
     if (!form.productName) { setError("Product name is required."); return; }
     setSaving(true); setError("");
     try {
-      const tempId = editEntry ? editEntry.gateEntryId : `GE-TEMP-${Date.now()}`;
-      const folder = `stockmanagement/gateentry/${tempId}`;
-
-      const mediaKeys = ["driverPhoto", "gateOpeningVideo", "productPhoto", "productVideo", "coaFile"];
-      const uploadedUrls = {};
-
       setUploading({ all: true });
+      const base64Files = {};
+      const mediaKeys = ["driverPhoto", "gateOpeningVideo", "productPhoto", "productVideo", "coaFile"];
+      
       await Promise.all(
         mediaKeys.map(async (key) => {
           const file = pendingFiles.current[key];
-          if (!file) return;
-          const ext = file.name.split(".").pop();
-          const path = `${folder}/${key}.${ext}`;
-          try {
-            uploadedUrls[key] = await uploadToFirebase(file, path);
-          } catch (e) {
-            console.error(`Failed to upload ${key}:`, e);
+          if (file) {
+            base64Files[key] = await fileToBase64(file);
           }
         })
       );
@@ -300,7 +288,6 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
         itemBatchNumber: form.itemBatchNumber || null,
         coaAvailable: form.coaAvailable,
         coaDetails: form.coaDetails || null,
-        coaFile: "coaFile" in uploadedUrls ? uploadedUrls.coaFile : form.coaFile || null,
         productName: form.productName,
         packagingDetails: form.packagingDetails || null,
         quantityKg: form.quantityKg ? Number(form.quantityKg) : null,
@@ -314,13 +301,21 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
         transporterGst: form.transporterGst || null,
         driverName: form.driverName || null,
         driverPhone: form.driverPhone || null,
-        driverPhoto: "driverPhoto" in uploadedUrls ? uploadedUrls.driverPhoto : form.driverPhoto || null,
-        gateOpeningVideo: "gateOpeningVideo" in uploadedUrls ? uploadedUrls.gateOpeningVideo : form.gateOpeningVideo || null,
-        productVideo: "productVideo" in uploadedUrls ? uploadedUrls.productVideo : form.productVideo || null,
-        productPhoto: "productPhoto" in uploadedUrls ? uploadedUrls.productPhoto : form.productPhoto || null,
         remarks: form.remarks || null,
         entryDate: form.entryDate,
       };
+
+      mediaKeys.forEach(key => {
+        if (base64Files[key]) {
+          payload[key] = base64Files[key];
+        } else if (pendingFiles.current[key] === null) {
+          payload[key] = null;
+        } else if (form[key] && String(form[key]).startsWith("blob:")) {
+          payload[key] = null;
+        } else {
+          payload[key] = form[key] || null;
+        }
+      });
       
       if (editEntry) {
         await api.patch(`/api/stock/gate-entries/${editEntry.id}`, payload);

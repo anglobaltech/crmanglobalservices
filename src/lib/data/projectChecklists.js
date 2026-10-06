@@ -29,8 +29,6 @@ export const HALLMARKING_STAGES = [
     icon: "search",
     steps: [
       { id: "hm_audit_query_received", label: "Query received by BIS", type: "step" },
-      { id: "hm_audit_date_granted", label: "Audit Date Granted", type: "date" },
-      { id: "hm_audit_done", label: "Audit Done", type: "step" },
     ],
   },
   {
@@ -250,8 +248,6 @@ export const ISI_STAGES = [
     icon: "search",
     steps: [
       { id: "audit_query_received", label: "Query received by BIS", type: "step" },
-      { id: "audit_date_granted", label: "Audit Date Granted", type: "date" },
-      { id: "audit_done", label: "Audit Done", type: "step" },
     ],
   },
   {

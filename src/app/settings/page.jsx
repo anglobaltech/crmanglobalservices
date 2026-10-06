@@ -48,6 +48,10 @@ export default function SettingsPage() {
     name: "",
     permissions: {},
   });
+  
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [addRoleForm, setAddRoleForm] = useState({ department: "", name: "" });
+  const [isCreatingRole, setIsCreatingRole] = useState(false);
 
   const [activeTab, setActiveTab] = useState("Roles & Permissions");
 
@@ -187,6 +191,36 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCreateRole = async () => {
+    if (!addRoleForm.name || !addRoleForm.department) return alert("Name and department required");
+    setIsCreatingRole(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/roles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          name: addRoleForm.name,
+          department: addRoleForm.department,
+          permissions: Object.fromEntries(MODULES.map(m => [m, false]))
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to create role");
+      }
+      await fetchRoles();
+      setShowAddRole(false);
+      setAddRoleForm({ department: "", name: "" });
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsCreatingRole(false);
+    }
+  };
+
   const enabledCount = Object.values(form.permissions).filter(Boolean).length;
   const progressPercent = Math.round((enabledCount / MODULES.length) * 100) || 0;
 
@@ -264,7 +298,15 @@ export default function SettingsPage() {
                 
                 <div className="w-full xl:w-[320px] flex-shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden h-[calc(100vh-140px)]">
                   <div className="p-4 border-b border-gray-100 bg-white">
-                    <h3 className="text-sm font-bold text-gray-900 mb-4">Roles</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-gray-900">Roles</h3>
+                      <button 
+                        onClick={() => setShowAddRole(true)}
+                        className="text-xs bg-blue-600 text-white font-medium px-2 py-1 rounded-md hover:bg-blue-700 transition-colors"
+                      >
+                        + Add Role
+                      </button>
+                    </div>
                     
                     <div className="relative mb-4">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -277,12 +319,12 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    <div className="flex bg-gray-100/80 p-1 rounded-lg">
+                    <div className="flex overflow-x-auto bg-gray-100/80 p-1 rounded-lg gap-1 scrollbar-none">
                       {["all", ...DEPARTMENTS].map(dept => (
                         <button
                           key={dept}
                           onClick={() => setSelectedDept(dept)}
-                          className={`flex-1 text-xs font-medium py-1.5 rounded-md capitalize transition-all duration-200 ${selectedDept === dept ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                          className={`flex-none px-3 text-xs font-medium py-1.5 rounded-md capitalize transition-all duration-200 ${selectedDept === dept ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
                         >
                           {dept}
                         </button>
@@ -500,6 +542,57 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {showAddRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">Create New Role</h2>
+              <button
+                onClick={() => {
+                  setShowAddRole(false);
+                  setAddRoleForm({ department: "", name: "" });
+                }}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Department</label>
+                <select
+                  value={addRoleForm.department}
+                  onChange={(e) => setAddRoleForm({ ...addRoleForm, department: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                >
+                  <option value="">Select Department</option>
+                  {DEPARTMENTS.map(d => (
+                    <option key={d} value={d} className="capitalize">{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Role Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sales Executive"
+                  value={addRoleForm.name}
+                  onChange={(e) => setAddRoleForm({ ...addRoleForm, name: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleCreateRole}
+              disabled={isCreatingRole || !addRoleForm.name || !addRoleForm.department}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl transition-colors cursor-pointer"
+            >
+              {isCreatingRole ? "Creating..." : "Create Role"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

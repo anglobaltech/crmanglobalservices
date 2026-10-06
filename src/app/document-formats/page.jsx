@@ -641,6 +641,133 @@ function IsiAcceptanceSitDoc({ fields }) {
   );
 }
 
+function IsiListofMachineryDoc({ fields }) {
+  const f = fields;
+  const machines = Array.isArray(f.machines) && f.machines.length > 0 
+    ? f.machines 
+    : [{}];
+
+  return (
+    <div className="doc-body font-serif text-[13px] text-gray-900" style={{ lineHeight: "1.4" }}>
+      <p style={{ textAlign: "center", fontWeight: "bold", textDecoration: "underline", fontSize: "14px", marginBottom: "32px", textTransform: "uppercase" }}>
+        LIST OF MACHINERY
+      </p>
+      
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", marginBottom: "16px" }}>
+        <thead>
+          <tr>
+            <th style={{ border: "1px solid #333", padding: "8px", textAlign: "left", fontWeight: "bold" }}>Date of Installation</th>
+            <th style={{ border: "1px solid #333", padding: "8px", textAlign: "left", fontWeight: "bold" }}>Machinery</th>
+            <th style={{ border: "1px solid #333", padding: "8px", textAlign: "left", fontWeight: "bold" }}>Make</th>
+            <th style={{ border: "1px solid #333", padding: "8px", textAlign: "left", fontWeight: "bold" }}>Capacity</th>
+            <th style={{ border: "1px solid #333", padding: "8px", textAlign: "left", fontWeight: "bold" }}>Number Of Machine</th>
+            <th style={{ border: "1px solid #333", padding: "8px", textAlign: "left", fontWeight: "bold" }}>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {machines.map((m, i) => (
+            <tr key={i}>
+              <td style={{ border: "1px solid #333", padding: "8px" }} className="doc-field">{m.date || ""}</td>
+              <td style={{ border: "1px solid #333", padding: "8px" }} className="doc-field">{m.machinery || ""}</td>
+              <td style={{ border: "1px solid #333", padding: "8px" }} className="doc-field">{m.make || ""}</td>
+              <td style={{ border: "1px solid #333", padding: "8px" }} className="doc-field">{m.capacity || ""}</td>
+              <td style={{ border: "1px solid #333", padding: "8px" }} className="doc-field">{m.number || ""}</td>
+              <td style={{ border: "1px solid #333", padding: "8px" }} className="doc-field">{m.remarks || ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function IsiFactoryTestReportDoc({ fields }) {
+  const f = fields;
+  const tests = Array.isArray(f.tests) && f.tests.length > 0 ? f.tests : [{}];
+
+  // Calculate row spans based on presence of S.N
+  const rowSpans = [];
+  let currentSpanIndex = -1;
+
+  tests.forEach((t, i) => {
+    if (t.sn && t.sn.trim() !== "") {
+      rowSpans[i] = 1;
+      currentSpanIndex = i;
+    } else {
+      rowSpans[i] = 0;
+      if (currentSpanIndex !== -1) {
+        rowSpans[currentSpanIndex] += 1;
+      } else {
+        // Fallback for the first row if S.N is missing
+        rowSpans[i] = 1;
+        currentSpanIndex = i;
+      }
+    }
+  });
+
+  return (
+    <div className="doc-body font-serif text-[13px] text-gray-900" style={{ lineHeight: "1.4" }}>
+      <p style={{ textAlign: "center", fontWeight: "bold", textDecoration: "underline", fontSize: "14px", marginBottom: "24px", textTransform: "uppercase" }}>
+        FACTORY TEST REPORT
+      </p>
+
+      <div style={{ marginBottom: "24px", lineHeight: "1.8" }}>
+        <p><strong>Name of Applicant:</strong> <span className="doc-field">{hl(f.applicantName)}</span></p>
+        <p><strong>Address of Applicant:</strong> <span className="doc-field">{hl(f.applicantAddress)}</span></p>
+        <p><strong>IS No.:</strong> <span className="doc-field">{hl(f.isNo)}</span></p>
+        <p><strong>Product Name:</strong> <span className="doc-field">{hl(f.productName)}</span></p>
+        <p><strong>Type:</strong> <span className="doc-field">{hl(f.type)}</span></p>
+        <p><strong>Batch no:</strong> <span className="doc-field">{hl(f.batchNo)}</span></p>
+        <p><strong>Date of Manufacturing:</strong> <span className="doc-field">{hl(f.dom)}</span></p>
+        <p><strong>Date of testing:</strong> <span className="doc-field">{hl(f.dot)}</span></p>
+        <p><strong>Declared value:</strong> <span className="doc-field">{hl(f.declaredValue)}</span></p>
+      </div>
+      
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", marginBottom: "32px" }}>
+        <thead>
+          <tr>
+            <th rowSpan="2" style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold", width: "5%" }}>S.N</th>
+            <th rowSpan="2" style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold", width: "20%" }}>Requirements</th>
+            <th colSpan="3" style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold" }}>Test Method</th>
+            <th rowSpan="2" style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold", width: "15%" }}>Results</th>
+          </tr>
+          <tr>
+            <th style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold", width: "10%" }}>IS code Ref</th>
+            <th style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold", width: "10%" }}>Clause</th>
+            <th style={{ border: "1px solid #333", padding: "6px", textAlign: "center", fontWeight: "bold", width: "40%" }}>Value as per specification</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tests.map((t, i) => {
+            const span = rowSpans[i];
+            return (
+              <tr key={i}>
+                {span > 0 && (
+                  <td rowSpan={span} style={{ border: "1px solid #333", padding: "6px", textAlign: "center", verticalAlign: "top" }} className="doc-field">{t.sn || ""}</td>
+                )}
+                {span > 0 && (
+                  <td rowSpan={span} style={{ border: "1px solid #333", padding: "6px", verticalAlign: "top" }} className="doc-field">{t.requirements || ""}</td>
+                )}
+                {span > 0 && (
+                  <td rowSpan={span} style={{ border: "1px solid #333", padding: "6px", textAlign: "center", verticalAlign: "top" }} className="doc-field">{t.isCodeRef || ""}</td>
+                )}
+                <td style={{ border: "1px solid #333", padding: "6px", textAlign: "center", verticalAlign: "top" }} className="doc-field">{t.clause || ""}</td>
+                <td style={{ border: "1px solid #333", padding: "6px", verticalAlign: "top" }} className="doc-field">{t.value || ""}</td>
+                <td style={{ border: "1px solid #333", padding: "6px", verticalAlign: "top" }} className="doc-field">{t.results || ""}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px", fontWeight: "bold" }}>
+        <p style={{ textDecoration: "underline" }}>Firm's representative</p>
+        <p>QCI</p>
+      </div>
+    </div>
+  );
+}
+
 // Map template id → renderer component
 const RENDERERS = {
   isi_marking_fee_acceptance:    IsiMarkingFeeDoc,
@@ -652,6 +779,8 @@ const RENDERERS = {
   fmcs_application_letter:       FmcsApplicationDoc,
   hallmarking_undertaking:       HallmarkingUndertakingDoc,
   bis_crs_declaration:           BisCrsDeclarationDoc,
+  isi_list_of_machinery:         IsiListofMachineryDoc,
+  isi_factory_test_report:       IsiFactoryTestReportDoc,
 };
 
 // ─── SERVICE TYPE CONFIG ───────────────────────────────────────────────────────
@@ -663,6 +792,56 @@ const SERVICE_CONFIG = {
 };
 
 // ─── Field Input ───────────────────────────────────────────────────────────────
+function TableFieldInput({ field, value, onChange }) {
+  const rows = Array.isArray(value) ? value : [];
+  
+  const addRow = () => {
+    const newRow = {};
+    field.columns.forEach(c => newRow[c.key] = "");
+    onChange([...rows, newRow]);
+  };
+  
+  const updateRow = (index, key, val) => {
+    const newRows = [...rows];
+    newRows[index] = { ...newRows[index], [key]: val };
+    onChange(newRows);
+  };
+  
+  const removeRow = (index) => {
+    const newRows = rows.filter((_, i) => i !== index);
+    onChange(newRows);
+  };
+
+  return (
+    <div className="space-y-3 mt-2">
+      {rows.map((row, i) => (
+        <div key={i} className="flex gap-2 items-start bg-yellow-50/50 p-3 rounded-xl border border-yellow-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 flex-1">
+             {field.columns.map(col => (
+               <div key={col.key}>
+                 <span className="block text-[10px] font-semibold text-gray-500 mb-1">{col.label}</span>
+                 <input 
+                   type={col.type || "text"}
+                   value={row[col.key] || ""}
+                   onChange={e => updateRow(i, col.key, e.target.value)}
+                   placeholder={col.placeholder}
+                   className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-yellow-400/30 focus:border-yellow-400 bg-white"
+                 />
+               </div>
+             ))}
+          </div>
+          <button type="button" onClick={() => removeRow(i)} className="text-red-400 hover:text-red-600 p-1.5 bg-red-50 hover:bg-red-100 rounded-lg transition self-start mt-1 sm:mt-5">
+             <X size={14} />
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={addRow} className="flex items-center justify-center gap-1.5 w-full py-2 border border-dashed border-indigo-200 bg-indigo-50/50 text-indigo-600 hover:bg-indigo-50 rounded-xl text-xs font-semibold transition">
+        <Plus size={14} /> Add Row
+      </button>
+    </div>
+  );
+}
+
 function FieldInput({ field, value, onChange }) {
   return (
     <div>
@@ -670,7 +849,9 @@ function FieldInput({ field, value, onChange }) {
         {field.label}
         <span className="ml-1 inline-block w-2 h-2 rounded-full bg-yellow-400" title="Dynamic field" />
       </label>
-      {field.type === "date" ? (
+      {field.type === "table" ? (
+        <TableFieldInput field={field} value={value} onChange={onChange} />
+      ) : field.type === "date" ? (
         <input
           type="date"
           value={value || ""}
@@ -982,24 +1163,24 @@ export default function DocumentFormatsPage() {
               <div className="space-y-4">
 
                 {/* Toolbar */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center justify-between">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 sm:px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-0.5">{SERVICE_CONFIG[selectedTemplate.serviceType]?.label}</p>
                     <h2 className="text-sm font-bold text-gray-900">{selectedTemplate.name}</h2>
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition cursor-pointer">
+                      className="flex-1 sm:flex-none items-center justify-center flex gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition cursor-pointer">
                       {mode === "edit" ? <><Eye size={13} /> Preview</> : <><Edit3 size={13} /> Edit</>}
                     </button>
                     <button onClick={handlePrint}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition cursor-pointer">
-                      <Printer size={13} /> Print / Export
+                      className="flex-1 sm:flex-none items-center justify-center flex gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition cursor-pointer">
+                      <Printer size={13} /> Export
                     </button>
                   </div>
                 </div>
 
-                <div className={`grid gap-4 ${mode === "edit" ? "grid-cols-[1fr_1.4fr]" : "grid-cols-1"}`}>
+                <div className={`grid gap-4 ${mode === "edit" ? "grid-cols-1 xl:grid-cols-[1fr_1.4fr]" : "grid-cols-1"}`}>
 
                   {/* Fields panel */}
                   {mode === "edit" && (
@@ -1037,8 +1218,8 @@ export default function DocumentFormatsPage() {
                         <span className="inline-block w-2 h-2 rounded-full bg-yellow-400" /> = Dynamic fields
                       </span>
                     </div>
-                    <div className="bg-gray-100 flex-1 overflow-y-auto p-4 md:p-8 flex justify-center max-h-[75vh]">
-                      <div style={{ zoom: 0.75 }}>
+                    <div className="bg-gray-100 flex-1 overflow-auto p-2 sm:p-4 md:p-8 max-h-[75vh]">
+                      <div className="w-max mx-auto" style={{ zoom: 0.75 }}>
                         <div ref={printRef} className="bg-white shadow-lg border border-gray-200" style={{ width: '210mm', minHeight: '297mm', padding: '60px 75px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
                           <div className="document-wrapper" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                             

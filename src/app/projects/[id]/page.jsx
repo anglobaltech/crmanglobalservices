@@ -8,7 +8,8 @@ import {
   FolderOpen, FileText, Image as ImgIcon, File as FileIcon2,
   MessageSquare, Eye, ChevronLeft, ChevronRight,
   Award, FlaskConical, BadgeCheck, Search, ClipboardList,
-  Plus, BookOpen, Edit2, Save, X, Info
+  Plus, BookOpen, Edit2, Save, X, Info, IndianRupee,
+  AlertOctagon, ShieldAlert, RefreshCw
 } from "lucide-react";
 
 import { useProject } from "@/hooks/useProject";
@@ -21,12 +22,17 @@ import EmptyState from "@/components/ui/EmptyState";
 import EditProjectModal from "./EditProjectModal";
 
 const STATUS_OPTIONS = [
-  { value: "pending",     label: "Pending",     color: "bg-slate-100 text-slate-600" },
-  { value: "in_progress", label: "In Progress", color: "bg-blue-100 text-blue-700" },
-  { value: "review",      label: "Review",      color: "bg-purple-100 text-purple-700" },
-  { value: "on_hold",     label: "On Hold",     color: "bg-amber-100 text-amber-700" },
-  { value: "completed",   label: "Completed",   color: "bg-emerald-100 text-emerald-700" },
+  { value: "in_progress", label: "Running",   color: "bg-blue-100 text-blue-700 border-blue-200" },
+  { value: "on_hold",     label: "Hold",      color: "bg-amber-100 text-amber-700 border-amber-200" },
+  { value: "overdue",     label: "Overdue",   color: "bg-red-100 text-red-700 border-red-200" },
+  { value: "completed",   label: "Completed", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 ];
+
+// Fallback for old statuses still in DB
+const STATUS_FALLBACK = {
+  pending: { label: "Pending",     color: "bg-slate-100 text-slate-600 border-slate-200" },
+  review:  { label: "Review",      color: "bg-purple-100 text-purple-700 border-purple-200" },
+};
 
 const STAGE_ICONS = {
   stage_bis_id:         BadgeCheck,
@@ -49,6 +55,7 @@ const ACTIVITY_COLORS = {
   remark:         "bg-amber-100 text-amber-600",
   comment:        "bg-gray-100 text-gray-600",
   document:       "bg-sky-100 text-sky-600",
+  payment:        "bg-green-100 text-green-600",
 };
 
 function fmtDate(iso) {
@@ -439,16 +446,12 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
         </div>
       )}
 
-      {/* Slots */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        {/* Table header */}
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-2.5 border-b border-gray-100 bg-gray-50/60">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider w-7">#</span>
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Document / Information Required</span>
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Action</span>
-        </div>
+      {/* Slots — grouped by section for FMCS, flat for others */}
+      {(() => {
+        const hasSections = slots.some(s => s.section);
 
-        {slots.map((slot, idx) => {
+
+        const renderSlot = (slot, idx) => {
           if (slot.type === "text") {
             return (
               <div key={slot.id} className="border-b border-gray-50 last:border-0">
@@ -499,10 +502,8 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
           return (
             <div key={slot.id}
               className={`border-b border-gray-50 last:border-0 transition ${isDone ? "bg-emerald-50/30" : "hover:bg-gray-50/50"}`}>
-
               <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-3.5">
-                <span className="text-xs font-bold text-gray-300 w-7 text-right">{String(idx + 1).padStart(2, "0")}</span>
-
+                <span className="text-xs font-bold text-gray-300 w-7 text-right">{String(idx + 1).padStart(2, "00")}</span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-gray-800 font-medium leading-snug">{slot.label}</p>
@@ -519,9 +520,33 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
                   )}
                   {slot.file && (
                     <p className="text-xs text-gray-400 mt-0.5 truncate">
-                       {slot.file.name}  ·  {fmtDate(slot.file.uploadedAt)}
+                       {slot.file.name}  ·  {fmtDate(slot.file.uploadedAt)}
                       {slot.file.size && ` · ${(slot.file.size / 1024).toFixed(0)} KB`}
                     </p>
+                  )}
+                  {slot.requiresValidity && (
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      {slot.validityDate ? (() => {
+                        const vDate = new Date(slot.validityDate);
+                        const now = new Date();
+                        const threshold = new Date(now.getTime() + (slot.validityMonths || 1) * 30 * 24 * 60 * 60 * 1000);
+                        const isExp = vDate <= now;
+                        const isNear = vDate <= threshold && vDate > now;
+                        return (
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isExp ? "bg-red-100 text-red-700 animate-pulse border border-red-200" : isNear ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200" : "bg-emerald-100 text-emerald-700 border border-emerald-200"}`}>
+                            {isExp ? "⚠️ EXPIRED" : isNear ? "⚠️ Expiring soon" : "Valid"}: {fmtDate(slot.validityDate)}
+                          </span>
+                        );
+                      })() : (
+                        <span className="text-[9px] bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded font-bold">No Expiry Set</span>
+                      )}
+                      {isManager && (
+                        <input type="date" className="text-[10px] px-1.5 py-0.5 border border-gray-200 rounded focus:outline-none focus:border-blue-400 text-gray-600"
+                          value={slot.validityDate || ""}
+                          onChange={(e) => updateIsiDocSlot(slot.id, { validityDate: e.target.value })}
+                        />
+                      )}
+                    </div>
                   )}
                   {uploadingSlot === slot.id && (
                     <div className="mt-1">
@@ -533,7 +558,6 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
                     </div>
                   )}
                 </div>
-
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {isDone ? (
                     <>
@@ -566,12 +590,63 @@ function IsiDocumentsTab({ project, isManager, uploadIsiDocSlot, removeIsiDocSlo
                         onChange={e => { if (e.target.files[0]) handleUpload(slot.id, e.target.files[0]); e.target.value = ""; }} />
                     </label>
                   )}
-              </div>
+                </div>
               </div>
             </div>
           );
-        })}
-      </div>
+        };
+
+        if (!hasSections) {
+          return (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-2.5 border-b border-gray-100 bg-gray-50/60">
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider w-7">#</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Document / Information Required</span>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Action</span>
+              </div>
+              {slots.map((slot, idx) => renderSlot(slot, idx))}
+            </div>
+          );
+        }
+
+        // Section-grouped layout for FMCS
+        const sectionColors = {
+          "FMCS Documents":    "bg-blue-50 text-blue-700 border-blue-100",
+          "AIR Details":       "bg-purple-50 text-purple-700 border-purple-100",
+          "BIS Bank Guarantee":"bg-amber-50 text-amber-700 border-amber-100",
+        };
+        const sectionOrder = ["FMCS Documents", "AIR Details", "BIS Bank Guarantee"];
+        const grouped = {};
+        slots.forEach((s, i) => {
+          const sec = s.section || "Other";
+          if (!grouped[sec]) grouped[sec] = [];
+          grouped[sec].push({ slot: s, origIdx: i });
+        });
+        const orderedKeys = [...sectionOrder.filter(k => grouped[k]), ...Object.keys(grouped).filter(k => !sectionOrder.includes(k))];
+
+        return (
+          <div className="space-y-3">
+            {orderedKeys.map(sec => {
+              const entries = grouped[sec] || [];
+              const sectionDone = entries.filter(({ slot: s }) => {
+                if (s.type === "text") return !!s.value?.trim();
+                if (s.type === "table") return Array.isArray(s.value) && s.value.length > 0;
+                return !!s.file;
+              }).length;
+              const colorCls = sectionColors[sec] || "bg-gray-50 text-gray-700 border-gray-200";
+              return (
+                <div key={sec} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className={`flex items-center justify-between px-5 py-3 border-b border-gray-100 ${colorCls.split(" ")[0]}/40`}>
+                    <h3 className={`text-xs font-bold uppercase tracking-wider ${colorCls.split(" ").slice(1).join(" ")}`}>{sec}</h3>
+                    <span className="text-[10px] text-gray-400 font-semibold">{sectionDone}/{entries.length} filled</span>
+                  </div>
+                  {entries.map(({ slot, origIdx }) => renderSlot(slot, origIdx))}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -680,6 +755,18 @@ function IsiStagesTab({ project, isManager, toggleIsiStep, addRemark, activeCode
                         )}
                         {step.done && step.doneByName && (
                           <p className="text-xs text-emerald-600 mt-0.5">✓ {step.doneByName} · {fmtDate(step.doneAt)}</p>
+                        )}
+                        {step.remarks && step.remarks.length > 0 && (
+                          <div className="mt-2 space-y-1.5">
+                            {step.remarks.map((rmk, idx) => (
+                              <div key={idx} className="bg-amber-50/50 border border-amber-100 rounded-md p-2">
+                                <p className="text-[11px] text-gray-700 font-medium italic">"{rmk.message}"</p>
+                                <p className="text-[9px] text-gray-500 mt-1 font-semibold uppercase tracking-wider">
+                                  — {rmk.addedByName} {rmk.addedAt ? `· ${fmtDate(rmk.addedAt)}` : ''}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         )}
                         <RemarkBox stepId={step.id} stepLabel={step.label} onSubmit={addRemark} />
                       </div>
@@ -790,6 +877,338 @@ function FlatChecklistTab({ project, toggleChecklistItem }) {
   );
 }
 
+function FmcsDateInlineEditor({ label, value, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+  const [saving, setSaving] = useState(false);
+
+  if (!open) {
+    return (
+      <button onClick={() => { setDraft(value || ""); setOpen(true); }}
+        className="text-[10px] text-blue-500 hover:text-blue-700 font-semibold underline underline-offset-2 cursor-pointer">
+        {label}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1.5 bg-white border border-blue-200 rounded-lg px-2 py-1">
+      <input type="date" value={draft} onChange={e => setDraft(e.target.value)}
+        className="text-xs border-0 outline-none bg-transparent" />
+      <button onClick={async () => { setSaving(true); try { await onSave(draft); setOpen(false); } catch {} finally { setSaving(false); } }}
+        disabled={saving}
+        className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer disabled:opacity-50">
+        {saving ? "…" : "Save"}
+      </button>
+      <button onClick={() => setOpen(false)} className="text-gray-300 hover:text-gray-500 cursor-pointer"><X size={10} /></button>
+    </div>
+  );
+}
+
+function PaymentsTab({ project, isManager, addPaymentInstallment, deletePaymentInstallment, updateProjectField }) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ amount: "", date: new Date().toISOString().split("T")[0], note: "", referenceId: "", excessReason: "" });
+  const [saving, setSaving] = useState(false);
+  const [editNeeded, setEditNeeded] = useState(false);
+  const [neededDraft, setNeededDraft] = useState("");
+  const [savingNeeded, setSavingNeeded] = useState(false);
+
+  const payments = project.payments || [];
+  const totalNeeded = project.totalPaymentNeeded || 0;
+  const totalReceived = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const balance = totalNeeded - totalReceived;
+  const pct = totalNeeded > 0 ? Math.min(100, Math.round((totalReceived / totalNeeded) * 100)) : 0;
+
+  const isExcess = totalNeeded > 0 && (Number(form.amount || 0) > balance);
+
+  const handleAdd = async () => {
+    if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) return alert("Enter a valid amount");
+    if (isExcess && (!form.excessReason || !form.excessReason.trim())) return alert("Please provide a reason for the extra payment.");
+    
+    setSaving(true);
+    try {
+      await addPaymentInstallment({ 
+        amount: Number(form.amount), 
+        date: form.date, 
+        note: form.note, 
+        referenceId: form.referenceId,
+        excessReason: isExcess ? form.excessReason.trim() : ""
+      });
+      setForm({ amount: "", date: new Date().toISOString().split("T")[0], note: "", referenceId: "", excessReason: "" });
+      setShowAdd(false);
+    } catch (err) { alert(err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleSaveNeeded = async () => {
+    if (isNaN(Number(neededDraft)) || Number(neededDraft) < 0) return alert("Enter a valid amount");
+    setSavingNeeded(true);
+    try {
+      await updateProjectField({ totalPaymentNeeded: Number(neededDraft) || null });
+      setEditNeeded(false);
+    } catch (err) { alert(err.message); }
+    finally { setSavingNeeded(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Summary card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-bold text-gray-800">Payment Summary</p>
+          {isManager && (
+            <button onClick={() => { setNeededDraft(String(totalNeeded || "")); setEditNeeded(true); }}
+              className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 cursor-pointer">
+              <Edit2 size={11} /> Set Total
+            </button>
+          )}
+        </div>
+
+        {editNeeded ? (
+          <div className="flex gap-2 mb-4">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+              <input type="number" min="0" value={neededDraft} onChange={e => setNeededDraft(e.target.value)}
+                placeholder="Total payment needed"
+                className="w-full pl-7 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+            </div>
+            <button onClick={handleSaveNeeded} disabled={savingNeeded}
+              className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 cursor-pointer">
+              {savingNeeded ? "Saving…" : "Save"}
+            </button>
+            <button onClick={() => setEditNeeded(false)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 cursor-pointer"><X size={14} /></button>
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="text-center p-3 bg-gray-50 rounded-xl">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Total Needed</p>
+            <p className="text-lg font-bold text-gray-900">₹{totalNeeded.toLocaleString("en-IN")}</p>
+          </div>
+          <div className="text-center p-3 bg-emerald-50 rounded-xl">
+            <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider mb-1">Received</p>
+            <p className="text-lg font-bold text-emerald-700">₹{totalReceived.toLocaleString("en-IN")}</p>
+          </div>
+          <div className={`text-center p-3 rounded-xl ${balance > 0 ? "bg-red-50" : "bg-emerald-50"}`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${balance > 0 ? "text-red-500" : "text-emerald-600"}`}>Balance Due</p>
+            <p className={`text-lg font-bold ${balance > 0 ? "text-red-600" : "text-emerald-700"}`}>₹{Math.abs(balance).toLocaleString("en-IN")}</p>
+          </div>
+        </div>
+
+        {totalNeeded > 0 && (
+          <div>
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>Payment progress</span><span className="font-semibold">{pct}%</span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-emerald-500" : pct >= 50 ? "bg-blue-500" : "bg-amber-500"}`}
+                style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Add installment */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-bold text-gray-800">Installments ({payments.length})</p>
+          <button onClick={() => setShowAdd(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 transition cursor-pointer">
+            <Plus size={12} /> Add Payment
+          </button>
+        </div>
+
+        {showAdd && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Amount (₹) *</label>
+                <input type="number" min="1" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                  placeholder="e.g. 50000"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Date *</label>
+                <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Note (Optional)</label>
+                <input value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+                  placeholder="e.g. Advance payment..."
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Reference ID (Optional)</label>
+                <input value={form.referenceId} onChange={e => setForm(f => ({ ...f, referenceId: e.target.value }))}
+                  placeholder="e.g. UTR/Txn number"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500" />
+              </div>
+            </div>
+            {isExcess && (
+              <div>
+                <label className="block text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Reason for Extra Amount *</label>
+                <input value={form.excessReason || ""} onChange={e => setForm(f => ({ ...f, excessReason: e.target.value }))}
+                  placeholder="e.g. Additional testing required..."
+                  className="w-full px-3 py-2 bg-amber-50 border border-amber-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500" />
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 cursor-pointer">Cancel</button>
+              <button onClick={handleAdd} disabled={saving}
+                className="px-5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-50 cursor-pointer">
+                {saving ? "Adding…" : "Add Installment"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {payments.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-6">No payments recorded yet.</p>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {[...payments].reverse().map((p, idx) => (
+              <div key={p.id} className="flex items-center gap-3 py-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <IndianRupee size={13} className="text-emerald-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-emerald-700">₹{p.amount.toLocaleString("en-IN")}</p>
+                    {p.referenceId && <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">Ref: {p.referenceId}</span>}
+                    {p.note && <span className="text-xs text-gray-500">— {p.note}</span>}
+                  </div>
+                  {p.excessReason && (
+                    <div className="mt-1">
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                        Extra Payment Reason: {p.excessReason}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">{fmtDate(p.date)} · by {p.addedByName}</p>
+                </div>
+                {isManager && (
+                  <button onClick={() => { if (confirm("Remove this installment?")) deletePaymentInstallment(p.id); }}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400 transition cursor-pointer">
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CalibrationDocs({ project, isManager, addCalibrationDoc, removeCalibrationDoc, updateCalibrationDoc }) {
+  const [machineName, setMachineName] = useState("");
+  const [validityDate, setValidityDate] = useState("");
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const docs = project.calibrationDocs || [];
+
+  const handleAdd = async () => {
+    if (!machineName.trim() || !validityDate || !file) return alert("Please fill all fields and select a file.");
+    setUploading(true);
+    setProgress(0);
+    try {
+      await addCalibrationDoc(machineName.trim(), validityDate, file, setProgress);
+      setMachineName("");
+      setValidityDate("");
+      setFile(null);
+    } catch(err) {
+      alert("Failed to upload: " + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/40">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">Calibration Documents</h3>
+        <span className="text-[10px] text-gray-400 font-semibold">{docs.length} uploaded</span>
+      </div>
+
+      <div className="divide-y divide-gray-50">
+        {docs.length === 0 ? (
+          <div className="p-6 text-center text-gray-400 text-sm">No calibration documents uploaded yet.</div>
+        ) : (
+          docs.map((doc, idx) => {
+            const vDate = new Date(doc.validityDate);
+            const now = new Date();
+            const threshold = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 1 month
+            const isExp = vDate <= now;
+            const isNear = vDate <= threshold && vDate > now;
+
+            return (
+              <div key={doc.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-xs font-bold text-gray-300 w-5">{idx + 1}.</span>
+                    <p className="text-sm font-bold text-gray-800">{doc.machineName}</p>
+                    {isManager && (
+                      <input type="date" className="text-[10px] px-1.5 py-0.5 border border-gray-200 rounded focus:outline-none text-gray-600"
+                        value={doc.validityDate}
+                        onChange={e => updateCalibrationDoc(doc.id, { validityDate: e.target.value })}
+                      />
+                    )}
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isExp ? "bg-red-100 text-red-700 animate-pulse border border-red-200" : isNear ? "bg-amber-100 text-amber-700 animate-pulse border border-amber-200" : "bg-emerald-100 text-emerald-700 border border-emerald-200"}`}>
+                      {isExp ? "⚠️ EXPIRED" : isNear ? "⚠️ Expiring soon" : "Valid"}: {fmtDate(doc.validityDate)}
+                    </span>
+                  </div>
+                  <div className="pl-7">
+                    <a href={doc.file.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                      <Eye size={12}/> {doc.file.name}
+                    </a>
+                    <p className="text-[10px] text-gray-400 mt-1">Uploaded {fmtDate(doc.file.uploadedAt)} by {doc.file.uploadedBy}</p>
+                  </div>
+                </div>
+                {isManager && (
+                  <button onClick={() => { if(confirm("Remove this document?")) removeCalibrationDoc(doc.id); }}
+                    className="p-2 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-600 transition flex-shrink-0">
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {isManager && (
+        <div className="p-5 bg-gray-50/50 border-t border-gray-100">
+          <p className="text-xs font-bold text-gray-600 mb-3 uppercase tracking-wider">Add New Calibration Document</p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input type="text" placeholder="Machine Name" value={machineName} onChange={e => setMachineName(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400" />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-gray-500 font-semibold">Validity:</span>
+              <input type="date" value={validityDate} onChange={e => setValidityDate(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400" />
+            </div>
+            <div className="relative flex-shrink-0">
+              <input type="file" onChange={e => setFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+              <div className={`px-4 py-2 border rounded-xl text-sm font-semibold flex items-center gap-2 transition ${file ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}>
+                <Upload size={14} /> {file ? file.name.substring(0, 15) + '...' : 'Select File'}
+              </div>
+            </div>
+            <button onClick={handleAdd} disabled={uploading || !file || !machineName || !validityDate}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {uploading ? `Uploading ${progress}%` : "Add"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectDetailPage({ params }) {
   const { id } = use(params);
   const router = useRouter();
@@ -801,7 +1220,9 @@ export default function ProjectDetailPage({ params }) {
     addRemark, addComment, updateStatus,
     uploadDocument, deleteDocument,
     uploadIsiDocSlot, removeIsiDocSlot, updateIsiDocSlot,
-    ACT_PAGE_SIZE, deleteProject, updateProject, refetchAll
+    addCalibrationDoc, removeCalibrationDoc, updateCalibrationDoc,
+    ACT_PAGE_SIZE, deleteProject, updateProject, refetchAll,
+    addPaymentInstallment, deletePaymentInstallment, updateProjectField,
   } = useProject(id);
 
   const [activeTab, setActiveTab]     = useState(null); 
@@ -830,7 +1251,9 @@ export default function ProjectDetailPage({ params }) {
   const isFmcs = project.serviceType === "fmcs";
   const usesStages = isIsi || isBisCrs || isHallmarking || isFmcs; 
   const typeConfig = SERVICE_TYPES[project.serviceType] || { label: project.serviceType, color: "bg-gray-100 text-gray-600 border-gray-200" };
-  const statusConfig = STATUS_OPTIONS.find(s => s.value === project.status) || STATUS_OPTIONS[0];
+  const statusConfig = STATUS_OPTIONS.find(s => s.value === project.status)
+    || (STATUS_FALLBACK[project.status] ? { label: STATUS_FALLBACK[project.status].label, color: STATUS_FALLBACK[project.status].color } : null)
+    || { label: project.status, color: "bg-gray-100 text-gray-600 border-gray-200" };
 
   const isCodes = project.isCodes || [];
   const defaultCode = isCodes.length > 0 ? isCodes[0].code : "";
@@ -868,11 +1291,13 @@ export default function ProjectDetailPage({ params }) {
     ? [
         { key: "stages",    label: `Process Stages (${activeDoneSteps}/${activeTotalSteps})`, icon: ClipboardList },
         { key: "documents", label: `Documents Required (${docSlotsCompleted}/${isiDocSlots.length})`, icon: BookOpen },
+        { key: "payments",  label: `Payments`, icon: IndianRupee },
         { key: "activity",  label: `Activity (${actTotal})`, icon: Activity },
       ]
     : [
         { key: "checklist", label: `Checklist (${flatDone}/${flatChecklist.length})`, icon: ClipboardList },
         { key: "documents", label: `Documents (${(project.documents || []).length})`, icon: FolderOpen },
+        { key: "payments",  label: `Payments`, icon: IndianRupee },
         { key: "activity",  label: `Activity (${actTotal})`, icon: Activity },
       ];
 
@@ -947,18 +1372,38 @@ export default function ProjectDetailPage({ params }) {
                 {/* Status dropdown */}
                 <div className="relative">
                   <button onClick={() => setEditingStatus(v => !v)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${statusConfig.color}`}>
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${statusConfig.color}`}>
                     {statusConfig.label} <ChevronDown size={12} />
                   </button>
                   {editingStatus && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden min-w-[160px]">
-                      {STATUS_OPTIONS.map(s => (
-                        <button key={s.value}
-                          onClick={() => { updateStatus(s.value); setEditingStatus(false); }}
-                          className={`w-full text-left flex items-center gap-2 px-3 py-2 text-xs font-medium hover:bg-gray-50 transition cursor-pointer ${s.value === project.status ? "bg-blue-50 text-blue-700" : "text-gray-700"}`}>
-                          {s.label}
-                        </button>
-                      ))}
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden min-w-[210px]">
+                      {/* Overdue lock banner for non-managers */}
+                      {project.status === "overdue" && !isManager && (
+                        <div className="px-3 py-2.5 bg-red-50 border-b border-red-100 flex items-start gap-2">
+                          <AlertOctagon size={13} className="text-red-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-[10px] text-red-600 font-semibold leading-snug">
+                            This project is <span className="font-bold">Overdue</span>. Contact{" "}
+                            <span className="font-bold">Aayush Sir</span> for approval to resume.
+                          </p>
+                        </div>
+                      )}
+                      {STATUS_OPTIONS.map(s => {
+                        // Non-managers cannot move OUT of overdue to Running or Hold
+                        const isOverdueGate = project.status === "overdue" && !isManager
+                          && (s.value === "in_progress" || s.value === "on_hold");
+                        return (
+                          <button key={s.value}
+                            onClick={() => { if (!isOverdueGate) { updateStatus(s.value); setEditingStatus(false); } }}
+                            disabled={!!isOverdueGate}
+                            className={`w-full text-left flex items-center gap-2 px-3 py-2.5 text-xs font-medium transition
+                              ${s.value === project.status ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"}
+                              ${isOverdueGate ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}>
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.color.split(" ")[0].replace("bg-", "bg-")}`} />
+                            {s.label}
+                            {isOverdueGate && <span className="ml-auto text-[9px] text-red-500 font-bold bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">LOCKED</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1008,6 +1453,76 @@ export default function ProjectDetailPage({ params }) {
             {project.notes && (
               <div className="mt-2 bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-600">{project.notes}</div>
             )}
+
+            {/* Certificate Validity Warnings */}
+            {(isFmcs || project.serviceType === "isi" || project.serviceType === "hallmarking" || project.serviceType === "bis_crs") && (() => {
+              const now = new Date();
+              const certDateStr = project.certValidityDate || project.fmcsCertValidityDate;
+              const certDate = certDateStr ? new Date(certDateStr) : null;
+              const bgDate   = project.bankGuaranteeValidityDate ? new Date(project.bankGuaranteeValidityDate) : null;
+              
+              let thresholdDays = 0;
+              if (project.serviceType === "fmcs") thresholdDays = 120; // 4 months
+              else if (project.serviceType === "hallmarking") thresholdDays = 60; // 2 months
+              else if (project.serviceType === "bis_crs") thresholdDays = 60; // 2 months
+              else if (project.serviceType === "isi") thresholdDays = 30; // 1 month
+
+              const thresholdDate = new Date(now.getTime() + thresholdDays * 24 * 60 * 60 * 1000);
+              const sixMonthsFromNow  = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000);
+
+              const certNearExpiry = certDate && certDate <= thresholdDate && certDate > now;
+              const certExpired    = certDate && certDate <= now;
+              const bgNearExpiry   = bgDate && bgDate <= sixMonthsFromNow && bgDate > now;
+              const bgExpired      = bgDate && bgDate <= now;
+
+              return (
+                <div className="mt-3 space-y-2">
+                  {/* Certificate Validity */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-gray-500 font-semibold">Certificate Validity Date:</span>
+                    {certDate ? (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                        certExpired ? "bg-red-100 text-red-700 animate-pulse" :
+                        certNearExpiry ? "bg-amber-100 text-amber-700 animate-pulse" :
+                        "bg-emerald-100 text-emerald-700"
+                      }`}>
+                        {certExpired ? "⚠️ EXPIRED" : certNearExpiry ? "⚠️ Expires soon —" : ""} {fmtDate(certDateStr)}
+                      </span>
+                    ) : <span className="text-xs text-gray-400">Not set</span>}
+                    {isManager && (
+                      <FmcsDateInlineEditor
+                        label="Set Certificate Validity Date"
+                        value={certDateStr || ""}
+                        onSave={val => updateProjectField({ certValidityDate: val })}
+                      />
+                    )}
+                  </div>
+
+                  {/* BIS Bank Guarantee Validity (FMCS Only) */}
+                  {isFmcs && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-gray-500 font-semibold">BIS Bank Guarantee Validity:</span>
+                      {bgDate ? (
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                          bgExpired ? "bg-red-100 text-red-700 animate-pulse" :
+                          bgNearExpiry ? "bg-orange-100 text-orange-700 animate-pulse" :
+                          "bg-blue-100 text-blue-700"
+                        }`}>
+                          {bgExpired ? "🚨 EXPIRED" : bgNearExpiry ? "⚠️ Expiring soon —" : ""} {fmtDate(project.bankGuaranteeValidityDate)}
+                        </span>
+                      ) : <span className="text-xs text-gray-400">Not set</span>}
+                      {isManager && (
+                        <FmcsDateInlineEditor
+                          label="Set BG validity"
+                          value={project.bankGuaranteeValidityDate || ""}
+                          onSave={val => updateProjectField({ bankGuaranteeValidityDate: val })}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -1017,8 +1532,23 @@ export default function ProjectDetailPage({ params }) {
               <Award size={15} className="text-emerald-600" />
             </div>
             <div>
-              <p className="font-bold text-emerald-800 text-xs">Project Completed! </     p>
+              <p className="font-bold text-emerald-800 text-xs">Project Completed! </p>
               <p className="text-[11px] text-emerald-600">This project is now in the Completed section.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Overdue Warning Banner */}
+        {project.status === "overdue" && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <AlertOctagon size={15} className="text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-red-800 text-xs">Project Overdue</p>
+              <p className="text-[11px] text-red-600">
+                This project has been marked as overdue. You must contact <span className="font-bold">Aayush Sir</span> for permission to resume it.
+              </p>
             </div>
           </div>
         )}
@@ -1049,17 +1579,38 @@ export default function ProjectDetailPage({ params }) {
         )}
 
         {currentTab === "documents" && usesStages && (
-          <IsiDocumentsTab
-            project={project}
-            isManager={isManager}
-            uploadIsiDocSlot={uploadIsiDocSlot}
-            removeIsiDocSlot={removeIsiDocSlot}
-            updateIsiDocSlot={updateIsiDocSlot}
-          />
+          <div className="space-y-6">
+            <IsiDocumentsTab
+              project={project}
+              isManager={isManager}
+              uploadIsiDocSlot={uploadIsiDocSlot}
+              removeIsiDocSlot={removeIsiDocSlot}
+              updateIsiDocSlot={updateIsiDocSlot}
+            />
+            {project.serviceType === "hallmarking" && (
+              <CalibrationDocs
+                project={project}
+                isManager={isManager}
+                addCalibrationDoc={addCalibrationDoc}
+                removeCalibrationDoc={removeCalibrationDoc}
+                updateCalibrationDoc={updateCalibrationDoc}
+              />
+            )}
+          </div>
         )}
 
         {currentTab === "checklist" && !usesStages && (
           <FlatChecklistTab project={project} toggleChecklistItem={toggleChecklistItem} />
+        )}
+
+        {currentTab === "payments" && (
+          <PaymentsTab
+            project={project}
+            isManager={isManager}
+            addPaymentInstallment={addPaymentInstallment}
+            deletePaymentInstallment={deletePaymentInstallment}
+            updateProjectField={updateProjectField}
+          />
         )}
 
         {currentTab === "documents" && !usesStages && (

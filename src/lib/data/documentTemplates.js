@@ -122,6 +122,55 @@ export const DOCUMENT_TEMPLATES = [
       { id: "designation",      label: "Designation",               type: "text",   placeholder: "e.g. Managing Director" },
     ],
   },
+  {
+    id: "isi_list_of_machinery",
+    name: "ISI List of Machinery",
+    serviceType: "isi",
+    fields: [
+      {
+        id: "machines",
+        label: "Machinery Details",
+        type: "table",
+        columns: [
+          { key: "date", label: "Date of Installation", type: "text", placeholder: "e.g. 10.11.2023" },
+          { key: "machinery", label: "Machinery", type: "text", placeholder: "e.g. CIRCULAR LOOM" },
+          { key: "make", label: "Make", type: "text", placeholder: "e.g. FURAY FIRE" },
+          { key: "capacity", label: "Capacity", type: "text", placeholder: "e.g. 50 METER PER DAY" },
+          { key: "number", label: "Number Of Machine", type: "text", placeholder: "e.g. 8" },
+          { key: "remarks", label: "Remarks", type: "text", placeholder: "" }
+        ]
+      }
+    ],
+  },
+  {
+    id: "isi_factory_test_report",
+    name: "Factory Test Report",
+    serviceType: "isi",
+    fields: [
+      { id: "applicantName", label: "Name of Applicant", type: "text", placeholder: "e.g. ZI FIRE PROTECTION PRIVATE LIMITED" },
+      { id: "applicantAddress", label: "Address of Applicant", type: "text", placeholder: "e.g. Plot No P-88, Site B..." },
+      { id: "isNo", label: "IS No.", type: "text", placeholder: "e.g. 14933:2001" },
+      { id: "productName", label: "Product Name", type: "text", placeholder: "e.g. HIGH PRESSURE FIRE FIGHTING HOSE" },
+      { id: "type", label: "Type", type: "text", placeholder: "e.g. Type A" },
+      { id: "batchNo", label: "Batch no", type: "text", placeholder: "e.g. 2623DFAG" },
+      { id: "dom", label: "Date of Manufacturing", type: "text", placeholder: "e.g. 23.08.2026" },
+      { id: "dot", label: "Date of testing", type: "text", placeholder: "e.g. 24.08.2026" },
+      { id: "declaredValue", label: "Declared value", type: "text", placeholder: "e.g. Type A, Size 70mm (30 Meters)" },
+      {
+        id: "tests",
+        label: "Test Details",
+        type: "table",
+        columns: [
+          { key: "sn", label: "S.N", type: "text", placeholder: "1" },
+          { key: "requirements", label: "Requirements", type: "text", placeholder: "Dimensional tolerances" },
+          { key: "isCodeRef", label: "IS code Ref", type: "text", placeholder: "14933" },
+          { key: "clause", label: "Clause", type: "text", placeholder: "5" },
+          { key: "value", label: "Value as per specification", type: "text", placeholder: "..." },
+          { key: "results", label: "Results", type: "text", placeholder: "..." }
+        ]
+      }
+    ],
+  },
 
   // ─────────────────────────────────────────────
   // FMCS TEMPLATES

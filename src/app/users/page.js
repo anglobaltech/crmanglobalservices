@@ -36,15 +36,15 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const emptyForm = {
+  const getEmptyForm = () => ({
     name: "",
     email: "",
     password: "",
     department: "",
     roleId: "",
     roleName: "",
-  };
-  const [form, setForm] = useState(emptyForm);
+  });
+  const [form, setForm] = useState(getEmptyForm());
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -99,7 +99,7 @@ export default function UsersPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setShowCreate(false);
-      setForm(emptyForm);
+      setForm(getEmptyForm());
       fetchUsers();
     } catch (err) {
       alert(err.message);
@@ -145,7 +145,7 @@ export default function UsersPage() {
       if (!res.ok) throw new Error(data.message);
       setShowEdit(false);
       setEditTarget(null);
-      setForm(emptyForm);
+      setForm(getEmptyForm());
       fetchUsers();
     } catch (err) {
       alert(err.message);
@@ -206,7 +206,7 @@ export default function UsersPage() {
         </div>
         <button
           onClick={() => {
-            setForm(emptyForm);
+            setForm(getEmptyForm());
             setShowCreate(true);
           }}
           className="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-700 cursor-pointer text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-colors shadow-sm"
@@ -482,7 +482,7 @@ export default function UsersPage() {
         filteredRoles={filteredRoles}
         onClose={() => {
           setShowCreate(false);
-          setForm(emptyForm);
+          setForm(getEmptyForm());
         }}
         onSubmit={handleCreate}
         isSubmitting={isSubmitting}
@@ -501,7 +501,7 @@ export default function UsersPage() {
         onClose={() => {
           setShowEdit(false);
           setEditTarget(null);
-          setForm(emptyForm);
+          setForm(getEmptyForm());
         }}
         onSubmit={handleEdit}
         isSubmitting={isSubmitting}
@@ -640,7 +640,7 @@ function UserModal({
               }
             >
               <option value="">Select Department</option>
-              {["management", "sales", "services"].map((d) => (
+              {DEPARTMENTS.map((d) => (
                 <option key={d} value={d} className="capitalize">
                   {d.charAt(0).toUpperCase() + d.slice(1)}
                 </option>

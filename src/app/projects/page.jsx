@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Plus, Search, FolderOpen, CheckCircle2,
   AlertTriangle, TrendingUp, ChevronRight, Users, Calendar, Award,
-  ChevronLeft
+  ChevronLeft, RefreshCw, Building2
 } from "lucide-react";
 
 import { useProjects } from "@/hooks/useProjects";
@@ -21,12 +21,22 @@ import CreateProjectModal from "./CreateProjectModal";
 const PAGE_SIZE = 16;
 
 const STATUS_CONFIG = {
-  pending:     { label: "Pending",     cls: "bg-slate-100 text-slate-600" },
-  in_progress: { label: "In Progress", cls: "bg-blue-100 text-blue-700" },
-  review:      { label: "Review",      cls: "bg-purple-100 text-purple-700" },
-  on_hold:     { label: "On Hold",     cls: "bg-amber-100 text-amber-700" },
-  completed:   { label: "Completed",   cls: "bg-emerald-100 text-emerald-700" },
+  in_progress: { label: "Running",   cls: "bg-blue-100 text-blue-700 border-blue-200 border" },
+  on_hold:     { label: "Hold",      cls: "bg-amber-100 text-amber-700 border-amber-200 border" },
+  overdue:     { label: "Overdue",   cls: "bg-red-100 text-red-700 border-red-200 border" },
+  completed:   { label: "Completed", cls: "bg-emerald-100 text-emerald-700 border-emerald-200 border" },
+  
+  // Fallbacks
+  pending:     { label: "Pending",   cls: "bg-slate-100 text-slate-600 border-slate-200 border" },
+  review:      { label: "Review",    cls: "bg-purple-100 text-purple-700 border-purple-200 border" },
 };
+
+const STATUS_OPTIONS = [
+  { value: "in_progress", label: "Running" },
+  { value: "on_hold", label: "Hold" },
+  { value: "overdue", label: "Overdue" },
+  { value: "completed", label: "Completed" },
+];
 
 function formatDate(iso) {
   if (!iso) return "No deadline";
@@ -34,10 +44,12 @@ function formatDate(iso) {
 }
 
 function getProgress(project) {
-  if (project.serviceType === "isi" || project.serviceType === "bis_crs" || project.serviceType === "hallmarking") {
-    const stages = project.isiStages || [];
-    const total = stages.reduce((a, s) => a + s.steps.length, 0);
-    const done  = stages.reduce((a, s) => a + s.steps.filter(st => st.done).length, 0);
+  if (project.serviceType === "isi" || project.serviceType === "bis_crs" || project.serviceType === "hallmarking" || project.serviceType === "fmcs") {
+    const allStages = project.isCodes && project.isCodes.length > 0
+      ? project.isCodes.flatMap(c => c.stages || [])
+      : (project.isiStages || []);
+    const total = allStages.reduce((a, s) => a + (s.steps ? s.steps.length : 0), 0);
+    const done  = allStages.reduce((a, s) => a + (s.steps ? s.steps.filter(st => st.done).length : 0), 0);
     return total > 0 ? { done, total, pct: Math.round((done / total) * 100) } : { done: 0, total: 0, pct: 0 };
   }
   const cl = project.checklist || [];
@@ -49,39 +61,62 @@ function ProjectCard({ project, onClick }) {
   const typeConfig = SERVICE_TYPES[project.serviceType] || { label: project.serviceType, color: "bg-gray-100 text-gray-600 border-gray-200" };
   const statusConfig = STATUS_CONFIG[project.status] || { label: project.status, cls: "bg-gray-100 text-gray-600" };
   const { done, total, pct } = getProgress(project);
-  const isOverdue = project.dueDate && new Date(project.dueDate) < new Date() && project.status !== "completed";
+  const isOverdue = project.status === "overdue";
   const isDone = project.status === "completed";
+
+  // Certificate validity checks
+  const certDateStr = project.certValidityDate || project.fmcsCertValidityDate;
+  const certDate = certDateStr ? new Date(certDateStr) : null;
+  const now = new Date();
+  let thresholdDays = 0;
+  if (project.serviceType === "fmcs") thresholdDays = 120; // 4 months
+  else if (project.serviceType === "hallmarking") thresholdDays = 60; // 2 months
+  else if (project.serviceType === "bis_crs") thresholdDays = 60; // 2 months
+  else if (project.serviceType === "isi") thresholdDays = 30; // 1 month
+
+  const thresholdDate = new Date(now.getTime() + thresholdDays * 24 * 60 * 60 * 1000);
+  const certExpired = certDate && certDate <= now;
+  const certNearExpiry = certDate && !certExpired && certDate <= thresholdDate;
 
   return (
     <div onClick={onClick}
-      className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group overflow-hidden ${isDone ? "border-emerald-200 hover:border-emerald-300" : "border-gray-100 hover:border-blue-200"}`}>
-      <div className={`h-1 ${isDone ? "bg-emerald-400" : pct === 100 ? "bg-emerald-400" : "bg-blue-500"}`} />
-      <div className="p-2.5">
+      className={`bg-white rounded-xl border transition-all duration-200 cursor-pointer group flex flex-col ${isDone ? "border-gray-200 hover:border-emerald-300 hover:shadow-sm" : "border-gray-200 hover:border-gray-300 hover:shadow-md"}`}>
+      <div className="p-4 flex flex-col flex-1">
         {/* Header */}
         <div className="flex items-start justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-1.5">
-            <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${isDone ? "bg-emerald-50" : "bg-blue-50"}`}>
-              {isDone ? <Award size={12} className="text-emerald-600" /> : <FolderOpen size={12} className="text-blue-600" />}
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDone ? "bg-emerald-50 border border-emerald-100" : "bg-gray-50 border border-gray-100"}`}>
+              {isDone ? <Award size={14} className="text-emerald-600" /> : <FolderOpen size={14} className="text-gray-600" />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-mono leading-none">{project.id}</p>
-              <p className="text-[13px] font-bold text-gray-900 leading-tight truncate">{project.projectName}</p>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider font-mono bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">{project.id}</span>
+              </div>
+              <p className="text-[14px] font-bold text-gray-900 leading-tight truncate group-hover:text-blue-600 transition-colors">{project.projectName}</p>
             </div>
           </div>
-          <ChevronRight size={12} className="text-gray-300 group-hover:text-blue-500 transition mt-0.5 flex-shrink-0" />
         </div>
 
         {/* Client */}
-        <p className="text-[11px] text-gray-500 mb-1.5 flex items-center gap-1 truncate">
-          <Users size={10} className="text-gray-400 flex-shrink-0" />
-          <span className="truncate">{project.clientName}</span>
+        <p className="text-xs text-gray-600 mb-3 flex items-center gap-1.5 truncate">
+          <Building2 size={12} className="text-gray-400 flex-shrink-0" />
+          <span className="truncate font-medium">{project.clientName}</span>
         </p>
 
         {/* Badges */}
         <div className="flex flex-wrap gap-1 mb-2">
           <Badge label={typeConfig.label} colorClass={typeConfig.color} />
           <Badge label={statusConfig.label} colorClass={statusConfig.cls} />
-          {isOverdue && <Badge label={<><AlertTriangle size={8} className="mr-0.5 inline" />Overdue</>} colorClass="bg-red-100 text-red-600" />}
+          {certExpired && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded-md animate-pulse">
+              <RefreshCw size={8} /> CERTIFICATE EXPIRED
+            </span>
+          )}
+          {certNearExpiry && !certExpired && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-md animate-pulse">
+              <RefreshCw size={8} /> Renewal Due
+            </span>
+          )}
         </div>
 
         {/* Progress */}
@@ -95,15 +130,15 @@ function ProjectCard({ project, onClick }) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
-          <div className="flex items-center gap-1 text-[10px] text-gray-400">
-            <Calendar size={10} />
+        <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+            <Calendar size={12} className="text-gray-400" />
             {formatDate(project.dueDate)}
           </div>
           {project.assignedToNames?.length > 0 && (
-            <div className="flex items-center gap-1 text-[10px] text-gray-500">
-              <Users size={10} />
-              <span className="truncate max-w-[80px]">
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+              <Users size={12} className="text-gray-400" />
+              <span className="truncate max-w-[90px]">
                 {project.assignedToNames.slice(0, 2).join(", ")}
                 {project.assignedToNames.length > 2 && ` +${project.assignedToNames.length - 2}`}
               </span>
@@ -166,7 +201,7 @@ export default function ProjectsPage() {
 
   const activeProjects    = projects.filter(p => p.status !== "completed");
   const completedProjects = projects.filter(p => p.status === "completed");
-  const overdueProjects   = projects.filter(p => p.dueDate && new Date(p.dueDate) < new Date() && p.status !== "completed");
+  const overdueProjects   = projects.filter(p => p.status === "overdue");
 
   const activeTotalPages    = Math.ceil(activeProjects.length / PAGE_SIZE);
   const activeSlice         = activeProjects.slice((activePage - 1) * PAGE_SIZE, activePage * PAGE_SIZE);
@@ -208,11 +243,11 @@ export default function ProjectsPage() {
           <KpiCard icon={AlertTriangle} label="Overdue"        value={overdueProjects.length}   colorClass="bg-red-100 text-red-600" />
         </div>
 
-        {/* Service Type Tabs */}
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mb-1">
+        {/* Service Type Tabs - Underline Style */}
+        <div className="flex gap-4 overflow-x-auto no-scrollbar border-b border-gray-200">
           {[{ key: "", label: "All" }, ...Object.entries(SERVICE_TYPES).map(([k, v]) => ({ key: k, label: v.label }))].map(({ key, label }) => (
             <button key={key} onClick={() => handleFilter("serviceType", key)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${filters.serviceType === key ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+              className={`whitespace-nowrap px-1 py-2.5 text-[13px] font-bold transition cursor-pointer border-b-2 ${filters.serviceType === key ? "border-gray-900 text-gray-900" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}>
               {label}{key && stats?.byType?.[key] !== undefined ? ` (${stats.byType[key]})` : ""}
             </button>
           ))}
@@ -229,7 +264,7 @@ export default function ProjectsPage() {
           <select value={filters.status} onChange={e => handleFilter("status", e.target.value)}
             className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 focus:outline-none cursor-pointer">
             <option value="">All Statuses</option>
-            {Object.entries(STATUS_CONFIG).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
+            {STATUS_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
           {(filters.search || filters.status) && (
             <button

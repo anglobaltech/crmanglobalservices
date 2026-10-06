@@ -24,20 +24,14 @@ const Textarea = (props) => (
   />
 );
 
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Loader2 } from "lucide-react";
 
-async function uploadToFirebase(file, path) {
-  const storageRef = ref(storage, path);
-  return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file);
-    task.on("state_changed", null, reject, async () => {
-      const url = await getDownloadURL(storageRef);
-      resolve(url);
-    });
-  });
-}
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result);
+  reader.onerror = error => reject(error);
+});
 
 const YesNo = ({ value, onChange }) => (
   <div className="flex gap-2 mt-1">
@@ -178,31 +172,30 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
     setSaving(true); setError("");
 
     try {
-      const tempId = editEntry ? editEntry.stockExitId : `SX-TEMP-${Date.now()}`;
-      const folder = `stockmanagement/stockexit/${tempId}`;
-      const uploadedUrls = {};
-
       setUploading(true);
+      const base64Files = {};
+      const keys = ["vehiclePhoto", "itemPhoto", "itemVideo", "exitPhoto", "exitVideo"];
+      
       await Promise.all(
-        ["vehiclePhoto", "itemPhoto", "itemVideo"].map(async (key) => {
+        keys.map(async (key) => {
           const file = pendingFiles[key];
-          if (!file) return;
-          const ext = file.name.split(".").pop();
-          try {
-            uploadedUrls[key] = await uploadToFirebase(file, `${folder}/${key}.${ext}`);
-          } catch (e) {
-            console.error(`Failed to upload ${key}`, e);
+          if (file) {
+            base64Files[key] = await fileToBase64(file);
           }
         })
       );
       setUploading(false);
 
-      const payload = {
-        ...form,
-        vehiclePhoto: "vehiclePhoto" in uploadedUrls ? uploadedUrls.vehiclePhoto : form.vehiclePhoto || null,
-        itemPhoto: "itemPhoto" in uploadedUrls ? uploadedUrls.itemPhoto : form.itemPhoto || null,
-        itemVideo: "itemVideo" in uploadedUrls ? uploadedUrls.itemVideo : form.itemVideo || null,
-      };
+      const payload = { ...form };
+      keys.forEach(key => {
+        if (base64Files[key]) {
+          payload[key] = base64Files[key];
+        } else if (pendingFiles[key] === null) {
+          payload[key] = null;
+        } else if (payload[key] && payload[key].startsWith("blob:")) {
+          payload[key] = null;
+        }
+      });
 
       if (editEntry) {
         await api.patch(`/api/stock/exits/${editEntry.id}`, payload);

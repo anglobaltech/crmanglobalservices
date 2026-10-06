@@ -8,14 +8,40 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("crm_user");
+    localStorage.removeItem("crm_token");
+    window.location.href = "/login";
+  };
+
   useEffect(() => {
     try {
       const stored = localStorage.getItem("crm_user");
-      if (stored) {
+      const token = localStorage.getItem("crm_token");
+      
+      if (stored && token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const timeUntilExpiry = (payload.exp * 1000) - Date.now();
+        
+        if (timeUntilExpiry <= 0) {
+          logout();
+          return;
+        }
+
         const parsed = JSON.parse(stored);
         setUser(parsed);
+
+        const timeout = setTimeout(() => {
+          logout();
+        }, timeUntilExpiry);
+
+        setLoading(false);
+        return () => clearTimeout(timeout);
       }
-    } catch {}
+    } catch (e) {
+      console.error("Auth init error:", e);
+    }
     setLoading(false);
   }, []);
 
@@ -24,12 +50,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem("crm_user", JSON.stringify(userData));
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("crm_user");
-    localStorage.removeItem("crm_token");
-    window.location.href = "/login";
-  };
+
 
   const refreshUser = async () => {
     try {
@@ -44,7 +65,12 @@ export function AuthProvider({ children }) {
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/${id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (!res.ok) return;
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          logout();
+        }
+        return;
+      }
 
       const fresh = await res.json();
       setUser(fresh);

@@ -13,16 +13,28 @@ export const ROLES_CONFIG = [
   { department: "services", name: "Senior Executive" },
   { department: "services", name: "Executive" },
   { department: "services", name: "Support Staff" },
-
+  { department: "services", name: "Intern" },
+  { department: "accounts", name: "Account Manager" },
+  { department: "accounts", name: "Accountant" },
+  { department: "accounts", name: "Intern" },
+  { department: "software", name: "Senior Software Engineer" },
+  { department: "software", name: "Software Engineer" },
+  { department: "software", name: "Web Developer" },
+  { department: "software", name: "Web Developer Intern" },
+  { department: "software", name: "Data Analyst" },
+  { department: "software", name: "Data Analyst Intern" },
+  { department: "software", name: "Intern" },
 ];
 
 export const DEPT_COLORS = {
   management: "bg-purple-100 text-purple-700",
   sales: "bg-blue-100 text-blue-700",
   services: "bg-emerald-100 text-emerald-700",
+  accounts: "bg-orange-100 text-orange-700",
+  software: "bg-cyan-100 text-cyan-700",
 };
 
-export const DEPARTMENTS = ["management", "sales", "services"];
+export const DEPARTMENTS = ["management", "sales", "services", "accounts", "software"];
 
 export const MODULE_LABELS = {
   dashboard: "Dashboard",

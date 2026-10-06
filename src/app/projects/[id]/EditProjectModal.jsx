@@ -22,7 +22,9 @@ export default function EditProjectModal({ project, onClose, onUpdated, updatePr
     notes: project.notes || "", 
     isCode: project.isCode || "",
     assignedTo: project.assignedTo || [], 
-    assignedToNames: project.assignedToNames || [] 
+    assignedToNames: project.assignedToNames || [],
+    certValidityDate: project.certValidityDate || project.fmcsCertValidityDate || "",
+    bankGuaranteeValidityDate: project.bankGuaranteeValidityDate || "",
   });
   
   const [users, setUsers] = useState([]);
@@ -159,6 +161,24 @@ export default function EditProjectModal({ project, onClose, onUpdated, updatePr
                 placeholder="e.g. IS 3745, IS 1234"
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white placeholder-gray-400" />
             </div>
+
+            {/* Certificate Validity */}
+            {(form.serviceType === "fmcs" || form.serviceType === "isi" || form.serviceType === "hallmarking" || form.serviceType === "bis_crs") && (
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Certificate Validity Date</label>
+                <input type="date" value={form.certValidityDate} onChange={e => setForm(f => ({ ...f, certValidityDate: e.target.value }))}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white" />
+              </div>
+            )}
+
+            {/* BIS Bank Guarantee Validity (FMCS Only) */}
+            {form.serviceType === "fmcs" && (
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">BIS Bank Guarantee Validity Date</label>
+                <input type="date" value={form.bankGuaranteeValidityDate} onChange={e => setForm(f => ({ ...f, bankGuaranteeValidityDate: e.target.value }))}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all focus:bg-white" />
+              </div>
+            )}
 
             {/* Assign Employees */}
             <div className="md:col-span-1">
