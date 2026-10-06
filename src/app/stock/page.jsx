@@ -738,7 +738,7 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
 const PAGE_SIZE = 20;
 
 /* ── Product Inventory Summary Card ─────────────────────────────────── */
-function ProductInventoryCard({ product, stockEntries, stockExits }) {
+function ProductInventoryCard({ product, stockEntries, stockExits, onSetTab }) {
   const entries = stockEntries.filter(
     e => (e.productName || "").trim().toLowerCase() === product.toLowerCase()
   );
@@ -777,7 +777,10 @@ function ProductInventoryCard({ product, stockEntries, stockExits }) {
 
       <div className="grid grid-cols-3 gap-2">
         {/* Total Received */}
-        <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-emerald-100">
+        <div 
+          onClick={() => onSetTab("entry")}
+          className="bg-white rounded-xl p-3 text-center shadow-sm border border-emerald-100 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all active:scale-[0.98]"
+        >
           <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
             <ArrowUpCircle size={13} className="text-emerald-600" />
           </div>
@@ -790,7 +793,10 @@ function ProductInventoryCard({ product, stockEntries, stockExits }) {
         </div>
 
         {/* Total Exited */}
-        <div className="bg-white rounded-xl p-3 text-center shadow-sm border border-orange-100">
+        <div 
+          onClick={() => onSetTab("exit")}
+          className="bg-white rounded-xl p-3 text-center shadow-sm border border-orange-100 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all active:scale-[0.98]"
+        >
           <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
             <ArrowDownCircle size={13} className="text-orange-500" />
           </div>
@@ -950,8 +956,7 @@ export default function StockPage() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useEffect(() => { setPage(1); setSelectedIds([]); }, [tab, search, dateFrom, dateTo]);
-  // Reset activeProduct when tab changes so filters stay sensible
-  useEffect(() => { setActiveProduct(null); setPage(1); }, [tab]);
+  // Note: activeProduct is intentionally NOT reset on tab change so users can track a product's lifecycle across Gate/Entry/Exit tabs.
 
   // ── Compute all unique products (case-insensitive) across all collections ──
   const allProducts = React.useMemo(() => {
@@ -1159,6 +1164,7 @@ export default function StockPage() {
             product={activeProduct}
             stockEntries={stockEntries}
             stockExits={stockExits}
+            onSetTab={setTab}
           />
         )}
 
