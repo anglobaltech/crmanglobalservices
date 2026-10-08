@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
-import { X, TruckIcon, Camera, Video, Upload, CheckCircle2, XCircle } from "lucide-react";
+import { X, TruckIcon, Camera, Video, Upload, CheckCircle2, XCircle, Check } from "lucide-react";
 import api from "@/services/api";
 
 const Field = ({ label, children, required }) => (
@@ -158,6 +158,7 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
       gstPercentage: editEntry ? (editEntry.gstAmount && editEntry.productAmount ? ((editEntry.gstAmount / editEntry.productAmount) * 100).toFixed(2) : "") : "",
       expenseAmount: "",
       expenseReason: "",
+      applyTds: editEntry ? (editEntry.tdsApplicable || false) : false,
     };
   });
 
@@ -167,8 +168,12 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
   const gstPercentage = parseFloat(form.gstPercentage) || 0;
   
   const productAmount = amountPerKg * qtyDispatched;
+  const isTdsEligible = productAmount >= 5000000; // 50 lakhs on product amount
+  const tdsAmount = (isTdsEligible && form.applyTds) ? (productAmount * 0.001) : 0;
+  const productAmountAfterTds = productAmount - tdsAmount;
+
   const gstAmount = productAmount * (gstPercentage / 100);
-  const totalAmountWithGst = productAmount + gstAmount;
+  const totalAmountWithGst = productAmountAfterTds + gstAmount;
 
   const availableQty = useMemo(() => {
     if (!form.productName) return 0;
@@ -228,6 +233,9 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
         productAmount,
         gstAmount,
         totalAmountWithGst,
+        tdsApplicable: isTdsEligible ? form.applyTds : false,
+        tdsAmount: tdsAmount,
+        productAmountAfterTds
       };
       keys.forEach(key => {
         if (base64Files[key]) {
@@ -354,6 +362,11 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
               <Field label="Product Amount (₹)">
                 <Input type="number" disabled value={productAmount || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
               </Field>
+              {(isTdsEligible && form.applyTds) && (
+                <Field label="Product Amount After TDS (₹)">
+                  <Input type="number" disabled value={productAmountAfterTds || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-blue-50 focus:outline-none text-blue-700 font-bold" placeholder="Auto-calculated" />
+                </Field>
+              )}
               <Field label="GST Percentage (%)">
                 <Input type="number" min="0" max="100" placeholder="0" value={form.gstPercentage} onChange={e => set("gstPercentage", e.target.value)} />
               </Field>
@@ -370,6 +383,28 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
                 <Input placeholder="Enter reason" value={form.expenseReason || ""} onChange={e => set("expenseReason", e.target.value)} />
               </Field>
             </div>
+            {isTdsEligible && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex flex-col gap-1 sm:flex-row sm:items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1">
+                    <Check size={14} />
+                    TDS Applicable
+                  </h4>
+                  <p className="text-[10px] text-blue-700">Product amount is ₹50 Lakhs or more. Apply 0.1% TDS?</p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded border border-blue-200 hover:bg-blue-50 transition-colors">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 text-blue-600 rounded" 
+                    checked={form.applyTds} 
+                    onChange={e => set("applyTds", e.target.checked)} 
+                  />
+                  <span className="text-xs font-bold text-blue-800">
+                    Apply TDS {form.applyTds && `(-₹${tdsAmount.toFixed(2)})`}
+                  </span>
+                </label>
+              </div>
+            )}
           </SectionBlock>
 
           <SectionBlock num={4} title="Transport Mode & Details" color="purple">

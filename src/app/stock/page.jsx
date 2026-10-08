@@ -328,9 +328,11 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
   const Row = ({ label, value, isYN }) => {
     if (!value && value !== 0 && value !== false) return null;
     return (
-      <div className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide w-32 flex-shrink-0 mt-0.5">{label}</span>
-        {isYN ? <YesNo val={value} /> : <span className="text-xs text-gray-800 font-medium flex-1">{value}</span>}
+      <div className="flex items-start gap-4 py-2 border-b border-gray-50 last:border-0">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide w-1/2 flex-shrink-0 mt-0.5">{label}</span>
+        <div className="flex-1">
+          {isYN ? <YesNo val={value} /> : <span className="text-xs text-gray-900 font-bold">{value}</span>}
+        </div>
       </div>
     );
   };
@@ -534,6 +536,8 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
               <Sec title="Financials">
                 <Row label="Price/kg"        value={entry.amountPerKg ? `₹${Number(entry.amountPerKg).toLocaleString()}` : null} />
                 <Row label="Product Amount"  value={entry.productAmount ? `₹${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.approvedQty ? `₹${(Number(entry.amountPerKg) * Number(entry.approvedQty)).toLocaleString()}` : null)} />
+                {entry.tdsApplicable && <Row label="TDS Deduction (0.1%)" value={`-₹${Number(entry.tdsAmount).toLocaleString()}`} />}
+                {entry.tdsApplicable && <Row label="Product Amount (After TDS )" value={`₹${Number(entry.productAmountAfterTds || (entry.productAmount - entry.tdsAmount)).toLocaleString()}`} />}
                 <Row 
                   label={(() => {
                     const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.approvedQty ? Number(entry.amountPerKg) * Number(entry.approvedQty) : 0);
@@ -543,9 +547,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
                   value={entry.gstAmount ? `₹${Number(entry.gstAmount).toLocaleString()}` : null} 
                 />
                 <Row label="Total Amount"    value={(() => {
-                  let base = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.approvedQty ? Number(entry.amountPerKg) * Number(entry.approvedQty) : 0);
-                  let gst = entry.gstAmount ? Number(entry.gstAmount) : 0;
-                  return base ? `₹${(base + gst).toLocaleString()}` : null;
+                  return entry.totalAmountWithGst ? `₹${Number(entry.totalAmountWithGst).toLocaleString()}` : null;
                 })()} />
                 <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
                 <Row label="Expense Reason"  value={entry.expenseReason || null} />
@@ -585,6 +587,8 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
               <Sec title="Financials">
                 <Row label="Price/kg"        value={entry.amountPerKg ? `₹${Number(entry.amountPerKg).toLocaleString()}` : null} />
                 <Row label="Product Amount"  value={entry.productAmount ? `₹${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.qtyDispatched ? `₹${(Number(entry.amountPerKg) * Number(entry.qtyDispatched)).toLocaleString()}` : null)} />
+                {entry.tdsApplicable && <Row label="TDS Deduction (0.1%)" value={`-₹${Number(entry.tdsAmount).toLocaleString()}`} />}
+                {entry.tdsApplicable && <Row label="Product Amount (After TDS)" value={`₹${Number(entry.productAmountAfterTds || (entry.productAmount - entry.tdsAmount)).toLocaleString()}`} />}
                 <Row 
                   label={(() => {
                     const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.qtyDispatched ? Number(entry.amountPerKg) * Number(entry.qtyDispatched) : 0);
@@ -594,10 +598,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
                   value={entry.gstAmount ? `₹${Number(entry.gstAmount).toLocaleString()}` : null} 
                 />
                 <Row label="Total Value"     value={(() => {
-                  let base = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.qtyDispatched ? Number(entry.amountPerKg) * Number(entry.qtyDispatched) : 0);
-                  let gst = entry.gstAmount ? Number(entry.gstAmount) : 0;
-                  let total = base + gst;
-                  return total ? `₹${total.toLocaleString()}` : (entry.totalValue ? `₹${Number(entry.totalValue).toLocaleString()}` : null);
+                  return entry.totalAmountWithGst ? `₹${Number(entry.totalAmountWithGst).toLocaleString()}` : (entry.totalValue ? `₹${Number(entry.totalValue).toLocaleString()}` : null);
                 })()} />
                 <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
                 <Row label="Expense Reason"  value={entry.expenseReason || null} />
@@ -1060,14 +1061,48 @@ function ProductInventoryCard({ product, summaryData, onSetTab }) {
 /* ── Product Filter Strip ────────────────────────────────────────────── */
 function ProductFilterStrip({ products, activeProduct, onSelect, stockEntries, stockExits }) {
   const scrollRef = useRef(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(true);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    setShowLeft(scrollLeft > 0);
+    setShowRight(scrollLeft < scrollWidth - clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener("resize", handleScroll);
+    return () => window.removeEventListener("resize", handleScroll);
+  }, [products, handleScroll]);
+
+  const scroll = (dir) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "left" ? -250 : 250, behavior: "smooth" });
+      setTimeout(handleScroll, 350); // check after animation
+    }
+  };
 
   if (products.length === 0) return null;
 
   return (
-    <div className="relative">
+    <div className="relative flex items-center group mb-2">
+      {showLeft && (
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-0 z-10 p-1 bg-gradient-to-r from-white via-white to-transparent text-gray-500 hover:text-black h-full flex items-center justify-start pr-6 cursor-pointer"
+        >
+          <div className="bg-white rounded-full shadow-md border border-gray-100 p-0.5">
+            <ChevronLeft size={14} />
+          </div>
+        </button>
+      )}
+
       <div
         ref={scrollRef}
-        className="flex items-center gap-2 overflow-x-auto pb-1"
+        onScroll={handleScroll}
+        className="flex items-center gap-2 overflow-x-auto pb-1 w-full"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {/* All Products chip */}
@@ -1089,7 +1124,6 @@ function ProductFilterStrip({ products, activeProduct, onSelect, stockEntries, s
         {/* Product chips */}
         {products.map(p => {
           const isActive = activeProduct === p;
-
           return (
             <button
               key={p}
@@ -1105,6 +1139,17 @@ function ProductFilterStrip({ products, activeProduct, onSelect, stockEntries, s
           );
         })}
       </div>
+
+      {showRight && (
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-0 z-10 p-1 bg-gradient-to-l from-white via-white to-transparent text-gray-500 hover:text-black h-full flex items-center justify-end pl-6 cursor-pointer"
+        >
+          <div className="bg-white rounded-full shadow-md border border-gray-100 p-0.5">
+            <ChevronRight size={14} />
+          </div>
+        </button>
+      )}
     </div>
   );
 }
