@@ -25,6 +25,8 @@ export default function ProtectedRoute({ children }) {
     if (loading) return;
     if (!user && !publicRoutes.includes(pathname)) {
       router.push("/login");
+    } else if (user && pathname === "/login") {
+      router.push("/dashboard");
     }
   }, [user, loading, pathname, router]);
 

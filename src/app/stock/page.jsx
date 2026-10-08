@@ -10,7 +10,7 @@ import {
   User, Car, Building2, Hash, Package, ArrowRight,
   Filter, ChevronDown, Scale, TrendingUp, TrendingDown,
   Layers, ArrowUpCircle, ArrowDownCircle, Boxes,
-  FileText, ExternalLink, Eye, Download, Camera, Video,
+  FileText, ExternalLink, Eye, Download, Camera, Video, Bell, Check
 } from "lucide-react"; 
 import api from "@/services/api";
 import DataTable from "@/components/common/DataTable";
@@ -107,6 +107,10 @@ const ENTRY_COLS = [
   { key: "approvedQty",    label: "Approved" },
   { key: "rejectedQty",    label: "Rejected" },
   { key: "entryDate",      label: "Date" },
+  { key: "amountPerKg",    label: "Amount/kg" },
+  { key: "productAmount",  label: "Product Amount" },
+  { key: "gstAmount",      label: "GST Amount" },
+  { key: "totalAmountWithGst", label: "Total Amount" },
   { key: "createdByName",  label: "By" },
 ];
 
@@ -115,10 +119,13 @@ const EXIT_COLS = [
   { key: "productName",      label: "Product" },
   { key: "batchNumber",      label: "Batch No." },
   { key: "qtyDispatched",    label: "Qty (kg)" },
-  { key: "totalValue",       label: "Total Value" },
   { key: "buyerCompanyName", label: "Company" },
   { key: "transportMode",    label: "Mode" },
   { key: "exitDate",         label: "Date" },
+  { key: "amountPerKg",    label: "Amount/kg" },
+  { key: "productAmount",  label: "Product Amount" },
+  { key: "gstAmount",      label: "GST Amount" },
+  { key: "totalAmountWithGst", label: "Total Amount" },
   { key: "createdByName",    label: "By" },
 ];
 
@@ -127,6 +134,7 @@ const initCols = (defs) => defs.map(c => c.key);
 const YES_NO_KEYS = new Set(["invoiceDocPresent","ewayBillPresent","fssaiLicenseApplicable","coaAvailable",
   "invoiceMatchesEway","vehicleNumberMatch","productMatchesInvoice","productMatchesEway","transporterReceiptMatch"]);
 const KG_KEYS     = new Set(["totalBilledQty","approvedQty","rejectedQty","qtyDispatched","quantityKg"]);
+const CURRENCY_KEYS = new Set(["totalValue", "totalAmountWithGst", "amountPerKg", "productAmount", "gstAmount"]);
 const DATE_KEYS   = new Set(["entryDate","exitDate","createdAt"]);
 const ID_COLOR    = { gateEntryId: "blue", stockEntryId: "green", stockExitId: "orange" };
 
@@ -136,7 +144,12 @@ function CellValue({ col, entry }) {
   if (DATE_KEYS.has(col))   return <DateChip val={v} />;
   if (ID_COLOR[col]) {
     const c = { blue: "text-blue-700 bg-blue-50", green: "text-emerald-700 bg-emerald-50", orange: "text-orange-700 bg-orange-50" }[ID_COLOR[col]];
-    return <span className={`font-mono text-[11px] font-bold px-1.5 py-0.5 rounded ${c}`}>{v || "—"}</span>;
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className={`font-mono text-[11px] font-bold px-1.5 py-0.5 rounded ${c}`}>{v || "—"}</span>
+        {entry.hasUnreadRemark && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-200" title="New Remark" />}
+      </div>
+    );
   }
   if (KG_KEYS.has(col)) {
     if (col === "rejectedQty" && v) {
@@ -144,6 +157,9 @@ function CellValue({ col, entry }) {
     }
     const s = kgStr(v);
     return s ? <span className="text-[11px] font-bold text-gray-800">{s}</span> : <span className="text-gray-300 text-[10px]">—</span>;
+  }
+  if (CURRENCY_KEYS.has(col)) {
+    return v ? <span className="text-[11px] font-bold text-gray-800">₹{Number(v).toLocaleString()}</span> : <span className="text-gray-300 text-[10px]">—</span>;
   }
   return v ? <span className="text-[11px] text-gray-700">{v}</span> : <span className="text-gray-300 text-[10px]">—</span>;
 }
@@ -278,9 +294,29 @@ function MediaCard({ label, url, isVideo, onView }) {
   );
 }
 
-function DetailModal({ entry, type, onClose, onEdit }) {
+function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDone }) {
+  const { user } = useAuth();
   const [lightbox, setLightbox] = useState(null);
+  const [remarkText, setRemarkText] = useState("");
+  const [isSubmittingRemark, setIsSubmittingRemark] = useState(false);
+  
   if (!entry) return null;
+
+  const rawRemarks = entry.remarks || "";
+  const splitIndex = rawRemarks.indexOf("\n[");
+  const originalNote = splitIndex !== -1 ? rawRemarks.slice(0, splitIndex).trim() : rawRemarks.trim();
+  const oldHistory = splitIndex !== -1 ? rawRemarks.slice(splitIndex).trim() : "";
+  const fullHistory = [oldHistory, entry.remarkHistory].filter(Boolean).join("\n").trim();
+
+  let lastRemarkByCurrentUser = false;
+  if (fullHistory && user?.name) {
+    const lines = fullHistory.split('\n');
+    const lastLine = lines[lines.length - 1];
+    if (lastLine.includes(user.name.trim())) {
+      lastRemarkByCurrentUser = true;
+    }
+  }
+
   const cfg = {
     gate:  { title: "Gate Entry",  id: entry.gateEntryId,  color: "blue",   Icon: ClipboardList },
     entry: { title: "Stock Entry", id: entry.stockEntryId, color: "emerald", Icon: PackageCheck },
@@ -293,7 +329,7 @@ function DetailModal({ entry, type, onClose, onEdit }) {
     if (!value && value !== 0 && value !== false) return null;
     return (
       <div className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide w-32 flex-shrink-0 mt-0.5">{label}</span>
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide w-32 flex-shrink-0 mt-0.5">{label}</span>
         {isYN ? <YesNo val={value} /> : <span className="text-xs text-gray-800 font-medium flex-1">{value}</span>}
       </div>
     );
@@ -312,7 +348,7 @@ function DetailModal({ entry, type, onClose, onEdit }) {
     if (!hasContent) return null;
     return (
       <div className="mb-4">
-        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-4">{title}</p>
+        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 px-4">{title}</p>
         <div className="mx-0 bg-white border border-gray-100 rounded-xl px-4 divide-y divide-gray-50">{children}</div>
       </div>
     );
@@ -322,8 +358,8 @@ function DetailModal({ entry, type, onClose, onEdit }) {
     <>
       {lightbox && <MediaLightbox item={lightbox} onClose={() => setLightbox(null)} />}
 
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center sm:p-4">
-        <div className="bg-gray-50 w-full sm:max-w-xl flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh]">
+      <div className="fixed inset-0 bg-black/60 z-[200] flex items-end sm:items-center justify-center sm:p-4">
+        <div className="bg-gray-50 w-full sm:max-w-2xl flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[90vh]">
           <div className={`${hdrBg} px-5 py-4 rounded-t-2xl flex-shrink-0`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -462,7 +498,7 @@ function DetailModal({ entry, type, onClose, onEdit }) {
                 <Row label="Buyer GST"    value={entry.gstNumberBuyer} />
                 <Row label="Entry Date"   value={fmtDateFull(entry.entryDate)} />
                 <Row label="Created By"   value={entry.createdByName} />
-                <Row label="Remarks"      value={entry.remarks} />
+                <Row label="Original Note" value={originalNote} />
               </Sec>
             </>
           )}
@@ -495,6 +531,25 @@ function DetailModal({ entry, type, onClose, onEdit }) {
                 <Row label="Rejected" value={kgStr(entry.rejectedQty)} />
                 <Row label="Reason"   value={entry.rejectionReason} />
               </Sec>
+              <Sec title="Financials">
+                <Row label="Price/kg"        value={entry.amountPerKg ? `₹${Number(entry.amountPerKg).toLocaleString()}` : null} />
+                <Row label="Product Amount"  value={entry.productAmount ? `₹${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.approvedQty ? `₹${(Number(entry.amountPerKg) * Number(entry.approvedQty)).toLocaleString()}` : null)} />
+                <Row 
+                  label={(() => {
+                    const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.approvedQty ? Number(entry.amountPerKg) * Number(entry.approvedQty) : 0);
+                    const pct = (prodAmt && entry.gstAmount) ? Math.round((Number(entry.gstAmount) / prodAmt) * 100) : null;
+                    return pct ? `GST (${pct}%)` : "GST Amount";
+                  })()} 
+                  value={entry.gstAmount ? `₹${Number(entry.gstAmount).toLocaleString()}` : null} 
+                />
+                <Row label="Total Amount"    value={(() => {
+                  let base = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.approvedQty ? Number(entry.amountPerKg) * Number(entry.approvedQty) : 0);
+                  let gst = entry.gstAmount ? Number(entry.gstAmount) : 0;
+                  return base ? `₹${(base + gst).toLocaleString()}` : null;
+                })()} />
+                <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
+                <Row label="Expense Reason"  value={entry.expenseReason || null} />
+              </Sec>
               <Sec title="Witnesses">
                 <Row label="Witness"      value={entry.witnessName} />
                 <Row label="W. Phone"     value={entry.witnessPhone} />
@@ -505,7 +560,7 @@ function DetailModal({ entry, type, onClose, onEdit }) {
               <Sec title="Other">
                 <Row label="Date"       value={fmtDateFull(entry.entryDate)} />
                 <Row label="Created By" value={entry.createdByName} />
-                <Row label="Remarks"    value={entry.remarks} />
+                <Row label="Original Note" value={originalNote} />
               </Sec>
             </>
           )}
@@ -526,7 +581,26 @@ function DetailModal({ entry, type, onClose, onEdit }) {
                 <Row label="Batch No."    value={entry.batchNumber} />
                 <Row label="Qty (kg)"     value={kgStr(entry.qtyDispatched)} />
                 <Row label="Packaging"    value={entry.packagingType} />
-                <Row label="Total Value"  value={entry.totalValue} />
+              </Sec>
+              <Sec title="Financials">
+                <Row label="Price/kg"        value={entry.amountPerKg ? `₹${Number(entry.amountPerKg).toLocaleString()}` : null} />
+                <Row label="Product Amount"  value={entry.productAmount ? `₹${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.qtyDispatched ? `₹${(Number(entry.amountPerKg) * Number(entry.qtyDispatched)).toLocaleString()}` : null)} />
+                <Row 
+                  label={(() => {
+                    const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.qtyDispatched ? Number(entry.amountPerKg) * Number(entry.qtyDispatched) : 0);
+                    const pct = (prodAmt && entry.gstAmount) ? Math.round((Number(entry.gstAmount) / prodAmt) * 100) : null;
+                    return pct ? `GST (${pct}%)` : "GST Amount";
+                  })()} 
+                  value={entry.gstAmount ? `₹${Number(entry.gstAmount).toLocaleString()}` : null} 
+                />
+                <Row label="Total Value"     value={(() => {
+                  let base = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.qtyDispatched ? Number(entry.amountPerKg) * Number(entry.qtyDispatched) : 0);
+                  let gst = entry.gstAmount ? Number(entry.gstAmount) : 0;
+                  let total = base + gst;
+                  return total ? `₹${total.toLocaleString()}` : (entry.totalValue ? `₹${Number(entry.totalValue).toLocaleString()}` : null);
+                })()} />
+                <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
+                <Row label="Expense Reason"  value={entry.expenseReason || null} />
               </Sec>
               <Sec title="Buyer Details">
                 <Row label="Buyer Name"   value={entry.buyerName} />
@@ -553,11 +627,60 @@ function DetailModal({ entry, type, onClose, onEdit }) {
               <Sec title="Other">
                 <Row label="Date"       value={fmtDateFull(entry.exitDate)} />
                 <Row label="Created By" value={entry.createdByName} />
-                <Row label="Remarks"    value={entry.remarks} />
+                <Row label="Original Note" value={originalNote} />
               </Sec>
               </>
             )}
+            {/* Remarks History for all types */}
+            {fullHistory && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1.5 px-4">
+                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Remarks History</p>
+                  {entry.hasUnreadRemark && onMarkRemarkDone && !lastRemarkByCurrentUser && (
+                    <button 
+                      onClick={onMarkRemarkDone}
+                      className="flex items-center gap-1 text-[9px] font-bold uppercase text-white bg-green-500 hover:bg-green-600 px-2 py-0.5 rounded transition-colors"
+                    >
+                      <Check size={10} /> Mark as Done
+                    </button>
+                  )}
+                </div>
+                <div className={`mx-0 bg-white border ${entry.hasUnreadRemark ? 'border-red-300 shadow-sm shadow-red-100' : 'border-gray-100'} rounded-xl p-4 transition-all`}>
+                  <p className="text-xs text-gray-700 font-medium whitespace-pre-wrap leading-relaxed">
+                    {fullHistory}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Add Remark Section (Always visible, very useful for viewers) */}
+          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">Add Remark / Update</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                placeholder="Type a remark or note..."
+                value={remarkText}
+                onChange={e => setRemarkText(e.target.value)}
+                className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+              />
+              <button
+                disabled={!remarkText.trim() || isSubmittingRemark}
+                onClick={async () => {
+                  setIsSubmittingRemark(true);
+                  if (onAddRemark) await onAddRemark(remarkText);
+                  setRemarkText("");
+                  setIsSubmittingRemark(false);
+                  onClose();
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+              >
+                {isSubmittingRemark ? "Submitting..." : "Submit Remark"}
+              </button>
+            </div>
+          </div>
+
           <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0 flex sm:justify-end flex-col sm:flex-row gap-3">
             {onEdit && (
               <button onClick={onEdit}
@@ -578,11 +701,18 @@ function GateCard({ e, onClick }) {
   const d = fmtDate(e.entryDate);
   return (
     <div onClick={() => onClick(e)}
-      className="bg-white border border-gray-100 rounded-2xl p-4 cursor-pointer active:scale-[0.99] hover:shadow-md hover:border-blue-200 transition-all"
+      className="bg-blue-50/40 border-[1.5px] border-blue-200 shadow-sm rounded-2xl p-4 cursor-pointer active:scale-[0.99] hover:shadow-md hover:bg-blue-50/80 hover:border-blue-300 transition-all"
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">{e.gateEntryId}</span>
+          <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+            {e.gateEntryId}
+          </span>
+          {e.hasUnreadRemark && (
+            <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[9px] font-bold uppercase border border-red-200 shadow-sm shadow-red-100">
+              <Bell size={8} className="animate-pulse" /> New Remark
+            </span>
+          )}
           <h3 className="text-sm font-bold text-gray-900 mt-1.5 leading-tight">{e.productName || "—"}</h3>
         </div>
         {d && (
@@ -608,7 +738,7 @@ function GateCard({ e, onClick }) {
         {e.importedByOther && (
           <div className="flex items-center gap-1.5 text-gray-600 col-span-2">
             <User size={11} className="text-gray-400 flex-shrink-0" />
-            <span className="truncate">{e.importedByOther}</span>
+            <span className="truncate max-w-[200px] sm:max-w-xs">{e.importedByOther}</span>
           </div>
         )}
       </div>
@@ -631,11 +761,18 @@ function EntryCard({ e, onClick }) {
   const hasRej = (e.rejectedQty || 0) > 0;
   return (
     <div onClick={() => onClick(e)}
-      className="bg-white border border-gray-100 rounded-2xl p-4 cursor-pointer active:scale-[0.99] hover:shadow-md hover:border-emerald-200 transition-all"
+      className="bg-emerald-50/40 border-[1.5px] border-emerald-200 shadow-sm rounded-2xl p-4 cursor-pointer active:scale-[0.99] hover:shadow-md hover:bg-emerald-50/80 hover:border-emerald-300 transition-all"
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <span className="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">{e.stockEntryId}</span>
+          <span className="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+            {e.stockEntryId}
+          </span>
+          {e.hasUnreadRemark && (
+            <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[9px] font-bold uppercase border border-red-200 shadow-sm shadow-red-100">
+              <Bell size={8} className="animate-pulse" /> New Remark
+            </span>
+          )}
           <h3 className="text-sm font-bold text-gray-900 mt-1.5 leading-tight">{e.productName || "—"}</h3>
         </div>
         {d && (
@@ -646,13 +783,18 @@ function EntryCard({ e, onClick }) {
         )}
       </div>
       {e.invoiceNumber && (
-        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-2">
-          <Hash size={10} className="text-gray-400" />
-          <span className="font-mono">{e.invoiceNumber}</span>
-          {e.billFrom && <><ArrowRight size={9} className="text-gray-300" /><span>{e.billFrom}</span></>}
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-2 w-full">
+          <Hash size={10} className="text-gray-400 flex-shrink-0" />
+          <span className="font-mono flex-shrink-0">{e.invoiceNumber}</span>
+          {e.billFrom && <><ArrowRight size={9} className="text-gray-300 flex-shrink-0" /><span className="truncate flex-1">{e.billFrom}</span></>}
         </div>
       )}
-      <div className="grid grid-cols-3 gap-2 bg-gray-50 rounded-xl p-2.5 text-center">
+      {e.totalAmountWithGst != null && (
+        <div className="mb-2 px-2 py-1 bg-emerald-50 rounded text-emerald-800 text-[11px] font-bold self-start inline-block">
+          ₹{Number(e.totalAmountWithGst).toLocaleString()}
+        </div>
+      )}
+      <div className="grid grid-cols-3 gap-2 bg-white/60 rounded-xl p-2.5 text-center">
         <div>
           <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Total</p>
           <p className="text-xs font-bold text-gray-800">{kgStr(e.totalBilledQty) || "—"}</p>
@@ -674,11 +816,18 @@ function ExitCard({ e, onClick }) {
   const d = fmtDate(e.exitDate);
   return (
     <div onClick={() => onClick(e)}
-      className="bg-white border border-gray-100 rounded-2xl p-4 cursor-pointer active:scale-[0.99] hover:shadow-md hover:border-orange-200 transition-all"
+      className="bg-orange-50/40 border-[1.5px] border-orange-200 shadow-sm rounded-2xl p-4 cursor-pointer active:scale-[0.99] hover:shadow-md hover:bg-orange-50/80 hover:border-orange-300 transition-all"
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <span className="font-mono text-[11px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md">{e.stockExitId}</span>
+          <span className="font-mono text-[11px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md">
+            {e.stockExitId}
+          </span>
+          {e.hasUnreadRemark && (
+            <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[9px] font-bold uppercase border border-red-200 shadow-sm shadow-red-100">
+              <Bell size={8} className="animate-pulse" /> New Remark
+            </span>
+          )}
           <h3 className="text-sm font-bold text-gray-900 mt-1.5 leading-tight">{e.productName || "—"}</h3>
         </div>
         {d && (
@@ -688,15 +837,20 @@ function ExitCard({ e, onClick }) {
           </div>
         )}
       </div>
-      <div className="flex items-center gap-3 flex-wrap text-[11px]">
+      <div className="flex items-center gap-2 flex-wrap text-[10px] sm:text-[11px]">
         {e.qtyDispatched != null && (
           <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg">
             <Scale size={10} /><span className="font-bold">{kgStr(e.qtyDispatched)}</span>
           </div>
         )}
-        {e.buyerName && <span className="text-gray-600 flex items-center gap-1"><User size={10} className="text-gray-400" />{e.buyerName}</span>}
-        {e.vehicleNumber && <span className="text-gray-600 flex items-center gap-1"><Car size={10} className="text-gray-400" />{e.vehicleNumber}</span>}
-        {e.destination && <span className="text-gray-500">→ {e.destination}</span>}
+        {e.totalAmountWithGst != null && (
+          <div className="flex items-center gap-1 bg-orange-50 text-orange-700 px-2.5 py-1 rounded-lg font-bold">
+            ₹{Number(e.totalAmountWithGst).toLocaleString()}
+          </div>
+        )}
+        {e.buyerName && <span className="text-gray-600 flex items-center gap-1 max-w-[45%]"><User size={10} className="text-gray-400 flex-shrink-0" /><span className="truncate">{e.buyerName}</span></span>}
+        {e.vehicleNumber && <span className="text-gray-600 flex items-center gap-1 max-w-[45%]"><Car size={10} className="text-gray-400 flex-shrink-0" /><span className="truncate">{e.vehicleNumber}</span></span>}
+        {e.destination && <span className="text-gray-500 max-w-full truncate">→ {e.destination}</span>}
       </div>
     </div>
   );
@@ -707,14 +861,14 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
     blue:   { bg: "bg-blue-50",    icon: "text-blue-600",    ring: "ring-blue-300",    activeBg: "bg-blue-600"   },
     green:  { bg: "bg-emerald-50", icon: "text-emerald-600", ring: "ring-emerald-300", activeBg: "bg-emerald-600"},
     orange: { bg: "bg-orange-50",  icon: "text-orange-500",  ring: "ring-orange-300",  activeBg: "bg-orange-500" },
-    red:    { bg: "bg-red-50",     icon: "text-red-500",     ring: "",                 activeBg: ""              },
+    red:    { bg: "bg-red-50",     icon: "text-red-500",     ring: "ring-red-300",     activeBg: "bg-red-500" },
   }[color] || {};
 
   return (
     <button
       onClick={onClick}
       disabled={!onClick}
-      className={`text-left bg-white rounded-2xl border p-3.5 sm:p-4 flex items-center gap-3 transition-all w-full ${
+      className={`text-left bg-white rounded-2xl border p-2.5 sm:p-4 flex items-center gap-2 sm:gap-3 transition-all w-full ${
         onClick ? "cursor-pointer" : "cursor-default"
       } ${active
         ? `border-transparent ring-2 ${C.ring} shadow-lg shadow-${color}-100`
@@ -723,12 +877,12 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
         : "border-gray-100"
       }`}
     >
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${active ? C.activeBg : C.bg}`}>
-        <Icon size={17} className={active ? "text-white" : C.icon} />
+      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${active ? C.activeBg : C.bg}`}>
+        <Icon size={17} className={`sm:w-4 sm:h-4 w-3.5 h-3.5 ${active ? "text-white" : C.icon}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] text-gray-500 font-medium leading-tight truncate">{label}</p>
-        <p className="text-lg sm:text-xl font-bold text-gray-900 leading-tight mt-0.5">{value ?? "0"}</p>
+        <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight">{label}</p>
+        <p className="text-[15px] sm:text-xl font-bold text-gray-900 leading-tight mt-0.5">{value ?? "0"}</p>
         {sub && <p className="text-[9px] text-gray-400 hidden sm:block">{sub}</p>}
       </div>
     </button>
@@ -738,16 +892,26 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
 const PAGE_SIZE = 20;
 
 /* ── Product Inventory Summary Card ─────────────────────────────────── */
-function ProductInventoryCard({ product, stockEntries, stockExits, onSetTab }) {
-  const entries = stockEntries.filter(
-    e => (e.productName || "").trim().toLowerCase() === product.toLowerCase()
-  );
-  const exits = stockExits.filter(
-    e => (e.productName || "").trim().toLowerCase() === product.toLowerCase()
-  );
+function ProductInventoryCard({ product, summaryData, onSetTab }) {
+  const s = summaryData || { received: 0, exited: 0, purchaseValue: 0, purchaseExpense: 0, salesValue: 0, salesExpense: 0 };
+  
+  const totalReceived = s.received;
+  const totalExited   = s.exited;
+  
+  const totalPurchaseValue = s.purchaseValue;
+  const totalPurchaseExpense = s.purchaseExpense;
+  
+  const avgCostPerKg = totalReceived > 0 ? totalPurchaseValue / totalReceived : 0;
+  const cogs = totalExited * avgCostPerKg;
 
-  const totalReceived = entries.reduce((s, e) => s + (Number(e.approvedQty) || 0), 0);
-  const totalExited   = exits.reduce((s, e) => s + (Number(e.qtyDispatched) || 0), 0);
+  const totalSalesValue = s.salesValue;
+  const totalSalesExpense = s.salesExpense;
+
+  const totalCombinedExpense = totalPurchaseExpense + totalSalesExpense;
+  
+  // No deductions! Just basic math as requested.
+  const profitLoss = totalSalesValue - cogs;
+
   const netBalance    = totalReceived - totalExited;
   const isLow         = netBalance > 0 && netBalance < totalReceived * 0.2;
   const isEmpty       = netBalance <= 0;
@@ -784,12 +948,12 @@ function ProductInventoryCard({ product, stockEntries, stockExits, onSetTab }) {
           <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
             <ArrowUpCircle size={13} className="text-emerald-600" />
           </div>
-          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total In</p>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total Stock In</p>
           <p className="text-base font-bold text-emerald-700 leading-tight">
             {totalReceived > 0 ? totalReceived.toLocaleString() : "0"}
             <span className="text-[9px] font-semibold text-emerald-500 ml-0.5">kg</span>
           </p>
-          <p className="text-[9px] text-gray-400 mt-0.5">{entries.length} entr{entries.length === 1 ? "y" : "ies"}</p>
+          <p className="text-[9px] text-gray-400 mt-0.5">{s.entryCount || 0} entr{(s.entryCount || 0) === 1 ? "y" : "ies"}</p>
         </div>
 
         {/* Total Exited */}
@@ -800,12 +964,12 @@ function ProductInventoryCard({ product, stockEntries, stockExits, onSetTab }) {
           <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
             <ArrowDownCircle size={13} className="text-orange-500" />
           </div>
-          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total Out</p>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total Stock Out</p>
           <p className="text-base font-bold text-orange-600 leading-tight">
             {totalExited > 0 ? totalExited.toLocaleString() : "0"}
             <span className="text-[9px] font-semibold text-orange-400 ml-0.5">kg</span>
           </p>
-          <p className="text-[9px] text-gray-400 mt-0.5">{exits.length} exit{exits.length === 1 ? "" : "s"}</p>
+          <p className="text-[9px] text-gray-400 mt-0.5">{s.exitCount || 0} exit{(s.exitCount || 0) === 1 ? "" : "s"}</p>
         </div>
 
         {/* Net Balance */}
@@ -815,7 +979,7 @@ function ProductInventoryCard({ product, stockEntries, stockExits, onSetTab }) {
           }`}>
             <Scale size={13} className={isEmpty ? "text-red-500" : isLow ? "text-amber-500" : "text-blue-600"} />
           </div>
-          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Net Balance</p>
+          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Stock Availability</p>
           <p className={`text-base font-bold leading-tight ${balanceColor}`}>
             {netBalance > 0 ? netBalance.toLocaleString() : "0"}
             <span className="text-[9px] font-semibold ml-0.5">kg</span>
@@ -843,6 +1007,52 @@ function ProductInventoryCard({ product, stockEntries, stockExits, onSetTab }) {
           </div>
         </div>
       )}
+
+      {/* Financial Summary */}
+      <div className="mt-3 pt-3 border-t border-black/5 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="bg-white/50 rounded-lg p-2 border border-black/5 flex flex-col justify-center text-center">
+          <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1.5 border-b border-black/5 pb-1">Purchase Details ({totalReceived} kg)</p>
+          <div className="flex justify-between items-center px-2 py-1.5 mt-1 bg-emerald-50/50 rounded border border-emerald-100/50">
+            <span className="text-xs text-gray-800 font-bold">Total Purchase:</span>
+            <span className="text-sm text-emerald-800 font-bold">₹{totalPurchaseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div className="flex justify-between items-center px-1 py-0.5 mt-1">
+            <span className="text-[10px] font-bold text-gray-500"><span className="text-red-500">Expense:</span></span>
+            <span className="text-xs text-gray-700 font-bold">₹{totalPurchaseExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+
+        <div className="bg-white/50 rounded-lg p-2 border border-black/5 flex flex-col justify-center text-center">
+          <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1.5 border-b border-black/5 pb-1">Sales Details ({totalExited} kg)</p>
+          <div className="flex justify-between items-center px-2 py-1.5 mt-1 bg-blue-50/50 rounded border border-blue-100/50">
+            <span className="text-xs text-gray-800 font-bold">Total Sales:</span>
+            <span className="text-sm text-blue-800 font-bold">₹{totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div className="flex justify-between items-center px-1 py-0.5 mt-1">
+            <span className="text-[10px] font-bold text-gray-500"><span className="text-red-500">Expense:</span></span>
+            <span className="text-xs text-gray-700 font-bold">₹{totalSalesExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+
+        <div className={`flex flex-col justify-center text-center rounded-lg p-2 border ${profitLoss >= 0 ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100"}`}>
+          <p className={`text-xs font-bold uppercase tracking-wider ${profitLoss >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {profitLoss >= 0 ? "Profit" : "Loss"}
+          </p>
+          <p className="text-[10px] text-gray-500 font-medium mb-1 border-b border-black/5 pb-1">(on {totalExited} kg dispatched)</p>
+          <p className={`text-base font-bold ${profitLoss >= 0 ? "text-emerald-700" : "text-red-700"} mt-1`}>
+            ₹{Math.abs(profitLoss).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <div className="flex justify-between items-center px-1 py-0.5 mt-2 border-t border-black/5 pt-1">
+            <span className="text-[10px] font-bold text-gray-500">Total <span className="text-red-500">Expense:</span></span>
+            <span className="text-xs text-gray-700 font-bold">₹{totalCombinedExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          {netBalance > 0 && (
+            <p className="text-xs font-bold text-gray-700 mt-2 pt-1.5 border-t border-black/5">
+              + {netBalance.toLocaleString()} kg item remaining
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -921,12 +1131,38 @@ export default function StockPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeProduct, setActiveProduct] = useState(null);
   const [showProductFilter, setShowProductFilter] = useState(false);
-
+  const [stockSummary, setStockSummary] = useState({});
   useEffect(() => {
     try {
       setCurrentUser(JSON.parse(localStorage.getItem("crm_user") || "{}"));
     } catch {}
   }, []);
+
+  useEffect(() => {
+    const checkModal = () => {
+      if (loading || (!gateEntries.length && !stockEntries.length && !stockExits.length)) return;
+      
+      const stored = localStorage.getItem('openStockModal');
+      if (stored) {
+        try {
+          const { tab: qTab, id: qId } = JSON.parse(stored);
+          let entry = null;
+          if (qTab === 'gate') entry = gateEntries.find(e => e.gateEntryId === qId || e.id === qId);
+          else if (qTab === 'entry') entry = stockEntries.find(e => e.stockEntryId === qId || e.id === qId);
+          else if (qTab === 'exit') entry = stockExits.find(e => e.stockExitId === qId || e.id === qId);
+
+          if (entry) {
+            setDetailEntry({ entry, type: qTab });
+            localStorage.removeItem('openStockModal');
+          }
+        } catch (err) {}
+      }
+    };
+
+    checkModal();
+    window.addEventListener('checkStockModal', checkModal);
+    return () => window.removeEventListener('checkStockModal', checkModal);
+  }, [gateEntries, stockEntries, stockExits, loading]);
 
   const managerRoles = [
     "Super Admin",
@@ -938,18 +1174,22 @@ export default function StockPage() {
     "Assistant Manager",
   ];
   const isManager = managerRoles.includes(currentUser?.roleName);
+  const isViewer = currentUser?.roleName === "Stock Viewer";
+  const canEdit = isManager || !isViewer;
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [geRes, seRes, sxRes] = await Promise.all([
+      const [geRes, seRes, sxRes, sumRes] = await Promise.all([
         api.get("/api/stock/gate-entries", { params: { limit: 500 } }),
         api.get("/api/stock/entries",      { params: { limit: 500 } }),
         api.get("/api/stock/exits",        { params: { limit: 500 } }),
+        api.get("/api/stock/summary"),
       ]);
       setGateEntries(geRes.data.entries || []);
       setStockEntries(seRes.data.entries || []);
       setStockExits(sxRes.data.entries || []);
+      setStockSummary(sumRes.data.summary || {});
     } catch { /* silent */ }
     setLoading(false);
   }, []);
@@ -985,9 +1225,15 @@ export default function StockPage() {
       return true;
     });
 
-  const fGate    = filter(gateEntries,  "entryDate");
-  const fEntries = filter(stockEntries, "entryDate");
-  const fExits   = filter(stockExits,   "exitDate");
+  const sortDesc = (arr, idKey) => arr.sort((a, b) => {
+    const idA = a[idKey] || "";
+    const idB = b[idKey] || "";
+    return idB.localeCompare(idA);
+  });
+
+  const fGate    = sortDesc(filter(gateEntries,  "entryDate"), "gateEntryId");
+  const fEntries = sortDesc(filter(stockEntries, "entryDate"), "stockEntryId");
+  const fExits   = sortDesc(filter(stockExits,   "exitDate"), "stockExitId");
 
   const kpiGate  = fGate.length;
   const kpiEntry = fEntries.length;
@@ -995,12 +1241,19 @@ export default function StockPage() {
   const kpiApprv = fEntries.reduce((s, e) => s + (Number(e.approvedQty) || 0), 0);
   const kpiRej   = fEntries.reduce((s, e) => s + (Number(e.rejectedQty) || 0), 0);
 
-  const currentList = tab === "gate" ? fGate : tab === "entry" ? fEntries : fExits;
+  const baseTab = (tab === "approved" || tab === "rejected") ? "entry" : tab;
+
+  const currentList = 
+    tab === "gate" ? fGate : 
+    tab === "exit" ? fExits : 
+    tab === "approved" ? fEntries.filter(e => (Number(e.approvedQty) || 0) > 0) :
+    tab === "rejected" ? fEntries.filter(e => (Number(e.rejectedQty) || 0) > 0) : 
+    fEntries;
   const pagedList   = currentList.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const allColDefs = { gate: GATE_COLS, entry: ENTRY_COLS, exit: EXIT_COLS }[tab];
-  const activeCols = { gate: gateCols, entry: entryCols, exit: exitCols }[tab];
-  const setActiveCols = { gate: setGateCols, entry: setEntryCols, exit: setExitCols }[tab];
+  const allColDefs = { gate: GATE_COLS, entry: ENTRY_COLS, exit: EXIT_COLS }[baseTab];
+  const activeCols = { gate: gateCols, entry: entryCols, exit: exitCols }[baseTab];
+  const setActiveCols = { gate: setGateCols, entry: setEntryCols, exit: setExitCols }[baseTab];
   
   const dataTableCols = allColDefs.map(c => ({
     ...c,
@@ -1013,18 +1266,18 @@ export default function StockPage() {
   const colDefs = activeCols.map(key => allColDefs.find(c => c.key === key)).filter(Boolean);
 
   const datesActive = dateFrom || dateTo;
-  const addColors   = { gate: "bg-blue-600 hover:bg-blue-700", entry: "bg-emerald-600 hover:bg-emerald-700", exit: "bg-orange-500 hover:bg-orange-600" }[tab];
-  const addLabel    = tab === "gate" ? "Gate Entry" : tab === "entry" ? "Stock Entry" : "Stock Exit";
-  const EmptyIcon   = { gate: ClipboardList, entry: PackageCheck, exit: Truck }[tab];
+  const addColors   = { gate: "bg-blue-600 hover:bg-blue-700", entry: "bg-emerald-600 hover:bg-emerald-700", exit: "bg-orange-500 hover:bg-orange-600" }[baseTab];
+  const addLabel    = baseTab === "gate" ? "Gate Entry" : baseTab === "entry" ? "Stock Entry" : "Stock Exit";
+  const EmptyIcon   = { gate: ClipboardList, entry: PackageCheck, exit: Truck }[baseTab];
 
-  const openDetail = (entry) => setDetailEntry({ entry, type: tab });
+  const openDetail = (entry) => setDetailEntry({ entry, type: baseTab });
 
   const handleBulkDelete = async () => {
     if (!selectedIds.length) return;
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected record(s)?`)) return;
     setIsDeleting(true);
     try {
-      const endpoint = tab === "gate" ? "gate-entries" : tab === "entry" ? "entries" : "exits";
+      const endpoint = baseTab === "gate" ? "gate-entries" : baseTab === "entry" ? "entries" : "exits";
       await api.post(`/api/stock/${endpoint}/bulk-delete`, { ids: selectedIds });
       setSelectedIds([]);
       fetchAll();
@@ -1069,10 +1322,12 @@ export default function StockPage() {
               className="p-2.5 rounded-xl border border-gray-200 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors cursor-pointer">
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             </button>
-            <button onClick={() => setModal(tab)}
-              className={`sm:hidden flex items-center gap-1 px-3 py-2 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer transition-colors`}>
-              <Plus size={13} />
-            </button>
+            {canEdit && (
+              <button onClick={() => setModal(tab)}
+                className={`sm:hidden flex items-center gap-1 px-3 py-2 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer transition-colors`}>
+                <Plus size={13} />
+              </button>
+            )}
           </div>
         </div>
         {showFilters && (
@@ -1097,15 +1352,17 @@ export default function StockPage() {
 
       <div className="px-3 sm:px-6 py-2 sm:py-3 space-y-2 mx-auto">
 
-        <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <KpiCard icon={ClipboardList} label="Gate Entries"  value={kpiGate}  color="blue"
             active={tab === "gate"}  onClick={() => setTab("gate")} />
           <KpiCard icon={PackageCheck}  label="Stock Entries" value={kpiEntry} color="green"
             active={tab === "entry"} onClick={() => setTab("entry")} />
           <KpiCard icon={Truck}         label="Stock Exits"   value={kpiExit}  color="orange"
             active={tab === "exit"}  onClick={() => setTab("exit")} />
-          <KpiCard icon={BarChart3}     label="Approved"      value={`${kpiApprv.toLocaleString()} kg`} color="green" sub="approved qty" />
-          <KpiCard icon={AlertTriangle} label="Rejected"      value={`${kpiRej.toLocaleString()} kg`}   color="red"   sub="rejected qty" />
+          <KpiCard icon={BarChart3}     label="Approved"      value={`${kpiApprv.toLocaleString()} kg`} color="green" sub="approved qty" 
+            active={tab === "approved"} onClick={() => { setTab("approved"); setPage(1); }} />
+          <KpiCard icon={AlertTriangle} label="Rejected"      value={`${kpiRej.toLocaleString()} kg`}   color="red"   sub="rejected qty" 
+            active={tab === "rejected"} onClick={() => { setTab("rejected"); setPage(1); }} />
         </div>
 
         {/* ── Product Filter Strip (collapsible) ────────────────────────── */}
@@ -1114,7 +1371,7 @@ export default function StockPage() {
             {/* Header row — always visible */}
             <button
               onClick={() => setShowProductFilter(v => !v)}
-              className="w-full flex items-center gap-2 px-3 sm:px-4 py-2.5 cursor-pointer hover:bg-gray-50/60 transition-colors"
+              className="w-full flex items-center gap-2 px-3 sm:px-4 py-2.5 cursor-pointer hover:bg-gray-50/60 transition-colors flex-wrap"
             >
               <div className="w-5 h-5 bg-blue-50 rounded-md flex items-center justify-center flex-shrink-0">
                 <Filter size={10} className="text-blue-500" />
@@ -1162,8 +1419,7 @@ export default function StockPage() {
         {activeProduct && (
           <ProductInventoryCard
             product={activeProduct}
-            stockEntries={stockEntries}
-            stockExits={stockExits}
+            summaryData={stockSummary[activeProduct.trim().toUpperCase()]}
             onSetTab={setTab}
           />
         )}
@@ -1175,7 +1431,7 @@ export default function StockPage() {
             <div className="relative flex-1">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input type="text"
-                placeholder={`Search ${tab === "gate" ? "gate entries" : tab === "entry" ? "stock entries" : "stock exits"}…`}
+                placeholder={`Search ${baseTab === "gate" ? "gate entries" : baseTab === "entry" ? "stock entries" : "stock exits"}…`}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-colors"
@@ -1187,10 +1443,12 @@ export default function StockPage() {
                 {isDeleting ? "Deleting..." : `Delete Selected (${selectedIds.length})`}
               </button>
             )}
-            <button onClick={() => setModal(tab)}
-              className={`hidden sm:flex items-center gap-1.5 h-9 px-4 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer transition-colors`}>
-              <Plus size={13} />{addLabel}
-            </button>
+            {canEdit && (
+              <button onClick={() => setModal(tab)}
+                className={`hidden sm:flex items-center gap-1.5 h-9 px-4 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer transition-colors`}>
+                <Plus size={13} />{addLabel}
+              </button>
+            )}
           </div>
 
           <div className="px-3 sm:px-4 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-1.5">
@@ -1228,16 +1486,18 @@ export default function StockPage() {
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <EmptyIcon size={32} className="text-gray-200" />
                 <p className="text-sm text-gray-400 font-medium">No records found</p>
-                <button onClick={() => setModal(tab)}
-                  className={`flex items-center gap-1.5 px-4 py-2 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer`}>
-                  <Plus size={13} />{addLabel}
-                </button>
+                {canEdit && (
+                  <button onClick={() => setModal(baseTab)}
+                    className={`flex items-center gap-1.5 px-4 py-2 ${addColors} text-white text-xs font-bold rounded-xl cursor-pointer`}>
+                    <Plus size={13} />{addLabel}
+                  </button>
+                )}
               </div>
             ) : (
               <div className="p-3 space-y-2.5">
-                {tab === "gate"  && pagedList.map(e => <GateCard  key={e.id} e={e} onClick={openDetail} />)}
-                {tab === "entry" && pagedList.map(e => <EntryCard key={e.id} e={e} onClick={openDetail} />)}
-                {tab === "exit"  && pagedList.map(e => <ExitCard  key={e.id} e={e} onClick={openDetail} />)}
+                {baseTab === "gate"  && pagedList.map(e => <GateCard  key={e.id} e={e} onClick={openDetail} />)}
+                {baseTab === "entry" && pagedList.map(e => <EntryCard key={e.id} e={e} onClick={openDetail} />)}
+                {baseTab === "exit"  && pagedList.map(e => <ExitCard  key={e.id} e={e} onClick={openDetail} />)}
                 
                 {/* Mobile Pagination Controls */}
                 {currentList.length > PAGE_SIZE && (
@@ -1287,7 +1547,7 @@ export default function StockPage() {
       {/* Create Modals */}
       {modal === "gate"  && <GateEntryModal  editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} />}
       {modal === "entry" && <StockEntryModal editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} gateEntries={gateEntries} />} 
-      {modal === "exit"  && <StockExitModal  editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} gateEntries={gateEntries} stockEntries={stockEntries} />}
+      {modal === "exit"  && <StockExitModal  editEntry={editEntry} onClose={() => { setModal(null); setEditEntry(null); }} onCreated={fetchAll} gateEntries={gateEntries} stockEntries={stockEntries} stockExits={stockExits} stockSummary={stockSummary} />}
 
       {/* Detail Modal */}
       {detailEntry && (
@@ -1295,10 +1555,42 @@ export default function StockPage() {
           entry={detailEntry.entry} 
           type={detailEntry.type} 
           onClose={() => setDetailEntry(null)} 
-          onEdit={() => {
+          onEdit={canEdit ? () => {
             setEditEntry(detailEntry.entry);
             setModal(detailEntry.type);
             setDetailEntry(null);
+          } : null}
+          onAddRemark={async (newRemark) => {
+            try {
+              const url = detailEntry.type === "gate" ? `/api/stock/gate-entries/${detailEntry.entry.id}` 
+                        : detailEntry.type === "entry" ? `/api/stock/entries/${detailEntry.entry.id}` 
+                        : `/api/stock/exits/${detailEntry.entry.id}`;
+              
+              const updatedHistory = detailEntry.entry.remarkHistory 
+                ? detailEntry.entry.remarkHistory + `\n[${new Date().toLocaleDateString()} ${currentUser?.name}]: ${newRemark}` 
+                : `[${new Date().toLocaleDateString()} ${currentUser?.name}]: ${newRemark}`;
+
+              await api.patch(url, { remarkHistory: updatedHistory, hasUnreadRemark: true });
+              setDetailEntry(prev => ({ ...prev, entry: { ...prev.entry, remarkHistory: updatedHistory, hasUnreadRemark: true } }));
+              fetchAll();
+            } catch (err) {
+              console.error("Failed to add remark", err);
+              alert("Failed to add remark. Please try again.");
+            }
+          }}
+          onMarkRemarkDone={async () => {
+            try {
+              const url = detailEntry.type === "gate" ? `/api/stock/gate-entries/${detailEntry.entry.id}` 
+                        : detailEntry.type === "entry" ? `/api/stock/entries/${detailEntry.entry.id}` 
+                        : `/api/stock/exits/${detailEntry.entry.id}`;
+              
+              await api.patch(url, { hasUnreadRemark: false });
+              setDetailEntry(prev => ({ ...prev, entry: { ...prev.entry, hasUnreadRemark: false } }));
+              fetchAll();
+            } catch (err) {
+              console.error("Failed to clear remark status", err);
+              alert("Failed to update status.");
+            }
           }}
         />
       )}

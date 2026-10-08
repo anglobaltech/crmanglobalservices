@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { DEPARTMENTS, MODULES, DEPT_COLORS, MODULE_LABELS } from "@/lib/data/rolesConfig";
+import { DEPARTMENTS, MODULES, DEPT_COLORS, MODULE_LABELS, ROLES_CONFIG } from "@/lib/data/rolesConfig";
 import { Shield, Settings, Bell, Lock, RotateCw, RefreshCw, Check, Grid, Search, LayoutDashboard, Users, Briefcase, ClipboardList, SlidersHorizontal, Wrench, FolderOpen, Package, FileText } from "lucide-react";
 
 const MODULE_ICONS = {
@@ -140,10 +140,24 @@ export default function SettingsPage() {
   };
 
   const filteredRoles = useMemo(() => {
-    return roles.filter(r => {
+    // Filter roles
+    const filtered = roles.filter(r => {
       const matchDept = selectedDept === "all" || r.department === selectedDept;
       const matchSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchDept && matchSearch;
+    });
+
+    // Create a map for quick index lookup based on department and name
+    const roleOrderMap = new Map();
+    ROLES_CONFIG.forEach((role, idx) => {
+      roleOrderMap.set(`${role.department}-${role.name}`, idx);
+    });
+
+    // Sort roles based on their index in ROLES_CONFIG
+    return filtered.sort((a, b) => {
+      const idxA = roleOrderMap.has(`${a.department}-${a.name}`) ? roleOrderMap.get(`${a.department}-${a.name}`) : 999;
+      const idxB = roleOrderMap.has(`${b.department}-${b.name}`) ? roleOrderMap.get(`${b.department}-${b.name}`) : 999;
+      return idxA - idxB;
     });
   }, [roles, selectedDept, searchQuery]);
 
@@ -348,19 +362,19 @@ export default function SettingsPage() {
                         <button
                           key={r.id}
                           onClick={() => handleRoleSelect(r.id)}
-                          className={`w-full text-left p-3.5 rounded-lg cursor-pointer transition-all border ${
+                          className={`w-full text-left p-3 rounded-lg cursor-pointer transition-all border ${
                             selectedRoleId === r.id 
                               ? "bg-blue-50/50 border-blue-200 shadow-[0_2px_8px_-2px_rgba(59,130,246,0.15)] ring-1 ring-blue-500" 
                               : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className={`font-semibold text-sm ${selectedRoleId === r.id ? "text-blue-900" : "text-gray-900"}`}>{r.name}</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${DEPT_COLORS[r.department]}`}>
+                          <div className="flex items-start justify-between mb-1">
+                            <span className={`font-semibold text-[13px] ${selectedRoleId === r.id ? "text-blue-900" : "text-gray-700"}`}>{r.name}</span>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${DEPT_COLORS[r.department]}`}>
                               {r.department}
                             </span>
                           </div>
-                          <div className="flex items-center text-xs text-gray-500 font-medium">
+                          <div className="flex items-center text-[11px] text-gray-400 font-medium">
                             <span>{Object.values(r.permissions || {}).filter(Boolean).length} modules enabled</span>
                           </div>
                         </button>
@@ -490,43 +504,47 @@ export default function SettingsPage() {
                     <div className="p-16 text-center text-gray-500 text-sm">No roles found. Seed roles in the Roles & Permissions tab.</div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-200 bg-gray-50">
-                            <th className="text-left px-6 py-4 text-gray-500 font-bold text-xs uppercase tracking-wider whitespace-nowrap sticky left-0 z-10 bg-gray-50 shadow-[1px_0_0_0_#e5e7eb]">
-                              Role Name
-                            </th>
-                            <th className="text-left px-4 py-4 text-gray-500 font-bold text-xs uppercase tracking-wider">
-                              Department
-                            </th>
-                            {MODULES.map((m) => (
-                              <th key={m} className="text-center px-4 py-4 text-gray-500 font-bold text-xs uppercase tracking-wider">
-                                {MODULE_LABELS[m]}
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-200 bg-gray-50/80">
+                              <th className="text-left px-5 py-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest whitespace-nowrap sticky left-0 z-10 bg-gray-50/80 shadow-[1px_0_0_0_#e5e7eb]">
+                                Role Name
                               </th>
-                            ))}
-                          </tr>
+                              <th className="text-left px-4 py-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">
+                                Department
+                              </th>
+                              {MODULES.map((m) => (
+                                <th key={m} className="text-center px-3 py-3 text-gray-500 font-bold text-[10px] uppercase tracking-widest">
+                                  {MODULE_LABELS[m]}
+                                </th>
+                              ))}
+                            </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {roles.map((r, idx) => (
-                            <tr key={r.id} className={`hover:bg-blue-50/40 transition-colors ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
-                              <td className={`px-6 py-4 font-semibold text-gray-900 sticky left-0 shadow-[1px_0_0_0_#f3f4f6] ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/90"}`}>
+                          {roles.slice().sort((a, b) => {
+                            const roleOrderMap = new Map();
+                            ROLES_CONFIG.forEach((role, idx) => roleOrderMap.set(`${role.department}-${role.name}`, idx));
+                            const idxA = roleOrderMap.has(`${a.department}-${a.name}`) ? roleOrderMap.get(`${a.department}-${a.name}`) : 999;
+                            const idxB = roleOrderMap.has(`${b.department}-${b.name}`) ? roleOrderMap.get(`${b.department}-${b.name}`) : 999;
+                            return idxA - idxB;
+                          }).map((r, idx) => (
+                            <tr key={r.id} className="hover:bg-blue-50/30 transition-colors bg-white group">
+                              <td className="px-5 py-3 font-semibold text-[13px] text-gray-900 sticky left-0 shadow-[1px_0_0_0_#f3f4f6] bg-white group-hover:bg-blue-50/30 transition-colors whitespace-nowrap">
                                 {r.name}
                               </td>
-                              <td className="px-4 py-4">
-                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${DEPT_COLORS[r.department] || "bg-gray-100 text-gray-600"}`}>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${DEPT_COLORS[r.department] || "bg-gray-100 text-gray-600"}`}>
                                   {r.department}
                                 </span>
                               </td>
                               {MODULES.map((m) => (
-                                <td key={m} className="text-center px-4 py-4">
+                                <td key={m} className="text-center px-3 py-3">
                                   {r.permissions?.[m] ? (
-                                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto shadow-sm">
+                                    <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center mx-auto ring-1 ring-blue-100 shadow-[0_1px_2px_rgba(59,130,246,0.1)]">
                                       <Check size={14} strokeWidth={3} />
                                     </div>
                                   ) : (
-                                    <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-300 flex items-center justify-center mx-auto">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                                    </div>
+                                    <span className="text-gray-300 font-black text-[12px]">-</span>
                                   )}
                                 </td>
                               ))}

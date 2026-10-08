@@ -117,7 +117,12 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
   const [error, setError] = useState("");
 
   const [form, setForm] = useState(() => {
-    if (editEntry) return { ...editEntry };
+    if (editEntry) {
+      const gstPercentage = (editEntry.gstAmount && editEntry.productAmount) 
+        ? ((editEntry.gstAmount / editEntry.productAmount) * 100).toFixed(2) 
+        : "";
+      return { ...editEntry, gstPercentage };
+    }
     return {
       invoiceNumber: "", billFrom: "", billTo: "", productName: "", batchNumber: "",
       totalBilledQty: "", approvedQty: "", rejectedQty: "",
@@ -127,8 +132,21 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
       gateEntryRef: "",
       entryDate: new Date().toISOString().split("T")[0],
       remarks: "",
+      amountPerKg: "", 
+      gstPercentage: editEntry ? (editEntry.gstAmount && editEntry.productAmount ? ((editEntry.gstAmount / editEntry.productAmount) * 100).toFixed(2) : "") : "",
+      expenseAmount: "",
+      expenseReason: "",
     };
   });
+
+  const amountPerKg = parseFloat(form.amountPerKg) || 0;
+  const approvedQty = parseFloat(form.approvedQty) || 0;
+  const expenseAmount = parseFloat(form.expenseAmount) || 0;
+  const gstPercentage = parseFloat(form.gstPercentage) || 0;
+  
+  const productAmount = amountPerKg * approvedQty;
+  const gstAmount = productAmount * (gstPercentage / 100);
+  const totalAmountWithGst = productAmount + gstAmount;
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const rejected = parseInt(form.rejectedQty) || 0;
@@ -149,6 +167,16 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
     if (!form.invoiceNumber) { setError("Invoice number is required."); return; }
     if (!form.totalBilledQty) { setError("Total billed quantity is required."); return; }
     if (!form.approvedQty)    { setError("Approved quantity is required."); return; }
+    
+    const billed = parseFloat(form.totalBilledQty) || 0;
+    const approved = parseFloat(form.approvedQty) || 0;
+    const rejectedAmt = parseFloat(form.rejectedQty) || 0;
+    
+    if (approved + rejectedAmt > billed) {
+      setError(`Invalid Quantities: Approved (${approved}) + Rejected (${rejectedAmt}) exceeds Total Billed Qty (${billed}).`);
+      return;
+    }
+
     setSaving(true); setError("");
 
     try {
@@ -166,7 +194,12 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
       );
       setUploading(false);
 
-      const payload = { ...form };
+      const payload = { 
+        ...form,
+        productAmount,
+        gstAmount,
+        totalAmountWithGst,
+      };
       keys.forEach(key => {
         if (base64Files[key]) {
           payload[key] = base64Files[key];
@@ -234,6 +267,27 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
               <Field label="Lot No / Batch No">
                 <Input placeholder="Lot / Batch number" value={form.batchNumber} onChange={e => set("batchNumber", e.target.value)} />
               </Field>
+              <Field label="Amount per Kg (₹)">
+                <Input type="number" min="0" placeholder="0" value={form.amountPerKg} onChange={e => set("amountPerKg", e.target.value)} />
+              </Field>
+              <Field label="Product Amount (₹)">
+                <Input type="number" disabled value={productAmount || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
+              </Field>
+              <Field label="GST Percentage (%)">
+                <Input type="number" min="0" max="100" placeholder="0" value={form.gstPercentage} onChange={e => set("gstPercentage", e.target.value)} />
+              </Field>
+              <Field label="GST Amount (₹)">
+                <Input type="number" disabled value={gstAmount ? gstAmount.toFixed(2) : ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
+              </Field>
+              <Field label="Total Amount with GST (₹)">
+                <Input type="number" disabled value={totalAmountWithGst || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none font-bold text-gray-700" placeholder="Auto-calculated" />
+              </Field>
+              <Field label="Expense Amount (₹)">
+                <Input type="number" min="0" placeholder="0" value={form.expenseAmount} onChange={e => set("expenseAmount", e.target.value)} />
+              </Field>
+              <Field label="Reason for Expense">
+                <Input placeholder="Enter reason" value={form.expenseReason || ""} onChange={e => set("expenseReason", e.target.value)} />
+              </Field>
             </div>
           </SectionBlock>
 
@@ -255,6 +309,11 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
                 <span className="text-gray-600">Total: <span className="text-gray-900">{form.totalBilledQty}</span></span>
                 <span className="text-emerald-600">✓ Approved: {form.approvedQty || 0}</span>
                 <span className="text-red-500">✗ Rejected: {form.rejectedQty || 0}</span>
+              </div>
+            )}
+            {error && error.includes("Invalid Quantities") && (
+              <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-[10px] font-semibold text-red-700">
+                {error}
               </div>
             )}
           </SectionBlock>
@@ -331,7 +390,9 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
             <Textarea placeholder="Additional notes..." value={form.remarks} onChange={e => set("remarks", e.target.value)} />
           </Field>
 
-          {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">{error}</div>}
+          {error && !error.includes("Invalid Quantities") && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">{error}</div>
+          )}
         </div>
 
         {/* Footer */}

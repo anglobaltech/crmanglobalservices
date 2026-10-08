@@ -1,8 +1,8 @@
 
 export const ROLES_CONFIG = [
-  { department: "management", name: "Super Admin" },
-  { department: "management", name: "Director" },
   { department: "management", name: "Founder & CEO" },
+  { department: "management", name: "Director" },
+  { department: "management", name: "Super Admin" },
   { department: "sales", name: "Branch Manager" },
   { department: "sales", name: "Manager" },
   { department: "sales", name: "Team Manager" },
@@ -13,6 +13,7 @@ export const ROLES_CONFIG = [
   { department: "services", name: "Senior Executive" },
   { department: "services", name: "Executive" },
   { department: "services", name: "Support Staff" },
+  { department: "services", name: "Stock Viewer" },
   { department: "services", name: "Intern" },
   { department: "accounts", name: "Account Manager" },
   { department: "accounts", name: "Accountant" },
@@ -20,8 +21,8 @@ export const ROLES_CONFIG = [
   { department: "software", name: "Senior Software Engineer" },
   { department: "software", name: "Software Engineer" },
   { department: "software", name: "Web Developer" },
-  { department: "software", name: "Web Developer Intern" },
   { department: "software", name: "Data Analyst" },
+  { department: "software", name: "Web Developer Intern" },
   { department: "software", name: "Data Analyst Intern" },
   { department: "software", name: "Intern" },
 ];
@@ -75,5 +76,6 @@ export const DEFAULT_PERMISSIONS = {
   "Intern":            { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: false, projects: false, stock: false, employees: false, documents: false },
   "Service Manager":   { dashboard: true,  users: false, sales: false, allocate: true,  settings: false, services: true,  projects: true,  stock: true,  employees: true,  documents: true  },
   "Senior Executive":  { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: true,  projects: true,  stock: true,  employees: false, documents: true  },
+  "Stock Viewer":      { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: false, projects: false, stock: true,  employees: false, documents: false },
   "Support Staff":     { dashboard: true,  users: false, sales: false, allocate: false, settings: false, services: true,  projects: true,  stock: true,  employees: false, documents: false },
 };

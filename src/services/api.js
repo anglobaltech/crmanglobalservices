@@ -34,6 +34,13 @@ const request = async (method, url, body = null, options = {}) => {
     body: body ? JSON.stringify(body) : null,
   });
 
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("crm_token");
+    localStorage.removeItem("crm_user");
+    window.location.href = "/login";
+    return { data: null };
+  }
+
   const data = await res.json();
   if (!res.ok) throw { response: { data }, status: res.status };
   return { data };

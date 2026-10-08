@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { X, TruckIcon, Camera, Video, Upload, CheckCircle2, XCircle } from "lucide-react";
 import api from "@/services/api";
 
@@ -134,13 +134,18 @@ const SectionBlock = ({ num, title, children, color = "orange" }) => {
   );
 };
 
-export default function StockExitModal({ editEntry, onClose, onCreated, gateEntries = [], stockEntries = [] }) {
+export default function StockExitModal({ editEntry, onClose, onCreated, gateEntries = [], stockEntries = [], stockExits = [], stockSummary = {} }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   const [form, setForm] = useState(() => {
-    if (editEntry) return { ...editEntry };
+    if (editEntry) {
+      const gstPercentage = (editEntry.gstAmount && editEntry.productAmount) 
+        ? ((editEntry.gstAmount / editEntry.productAmount) * 100).toFixed(2) 
+        : "";
+      return { ...editEntry, gstPercentage };
+    }
     return {
       buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
       invoiceDocNumber: "", ewayBillApplicable: null, ewayBillNumber: "",
@@ -149,8 +154,34 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
       transportMode: "transporter", transporterName: "", vehicleNumber: "", driverName: "", driverPhone: "", driverId: "",
       exitDate: new Date().toISOString().split("T")[0], remarks: "",
       vehiclePhoto: null, itemPhoto: null, itemVideo: null,
+      amountPerKg: "", 
+      gstPercentage: editEntry ? (editEntry.gstAmount && editEntry.productAmount ? ((editEntry.gstAmount / editEntry.productAmount) * 100).toFixed(2) : "") : "",
+      expenseAmount: "",
+      expenseReason: "",
     };
   });
+
+  const amountPerKg = parseFloat(form.amountPerKg) || 0;
+  const qtyDispatched = parseFloat(form.qtyDispatched) || 0;
+  const expenseAmount = parseFloat(form.expenseAmount) || 0;
+  const gstPercentage = parseFloat(form.gstPercentage) || 0;
+  
+  const productAmount = amountPerKg * qtyDispatched;
+  const gstAmount = productAmount * (gstPercentage / 100);
+  const totalAmountWithGst = productAmount + gstAmount;
+
+  const availableQty = useMemo(() => {
+    if (!form.productName) return 0;
+    const prod = form.productName.trim().toUpperCase();
+    const s = stockSummary[prod] || { received: 0, exited: 0 };
+    
+    let totalExited = s.exited;
+    if (editEntry && (editEntry.productName || "").trim().toUpperCase() === prod) {
+        totalExited -= (Number(editEntry.qtyDispatched) || 0);
+    }
+    
+    return Math.max(0, s.received - totalExited);
+  }, [form.productName, stockSummary, editEntry]);
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
@@ -169,6 +200,12 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
   const handleSubmit = async () => {
     if (!form.productName)    { setError("Product name is required."); return; }
     if (!form.qtyDispatched)  { setError("Dispatch quantity is required."); return; }
+    
+    if (qtyDispatched > availableQty) {
+      setError(`Insufficient stock. Only ${availableQty.toFixed(2)} kg of "${form.productName}" is available.`);
+      return;
+    }
+
     setSaving(true); setError("");
 
     try {
@@ -186,7 +223,12 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
       );
       setUploading(false);
 
-      const payload = { ...form };
+      const payload = { 
+        ...form,
+        productAmount,
+        gstAmount,
+        totalAmountWithGst,
+      };
       keys.forEach(key => {
         if (base64Files[key]) {
           payload[key] = base64Files[key];
@@ -285,7 +327,7 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
               <Field label="Quantity Dispatched" required>
                 <div className="flex">
                   <Input
-                    type="number" min="0" placeholder="0"
+                    type="number" min="0" max={availableQty} step="any" placeholder={`Max: ${availableQty}`}
                     value={form.qtyDispatched}
                     onChange={e => set("qtyDispatched", e.target.value)}
                     style={{ borderRadius: "0.5rem 0 0 0.5rem", borderRight: "none" }}
@@ -294,12 +336,38 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
                     kg
                   </span>
                 </div>
+                {form.productName && (
+                  <p className={`text-[10px] mt-1.5 ${qtyDispatched > availableQty ? "text-red-500 font-bold" : "text-emerald-600 font-medium"}`}>
+                    Available Stock: {availableQty.toFixed(2)} kg
+                  </p>
+                )}
               </Field>
               <Field label="Type of Packaging">
                 <Input placeholder="e.g. 50kg bags, Box" value={form.packagingType} onChange={e => set("packagingType", e.target.value)} />
               </Field>
               <Field label="Exit Date">
                 <Input type="date" value={form.exitDate} onChange={e => set("exitDate", e.target.value)} />
+              </Field>
+              <Field label="Amount per Kg (₹)">
+                <Input type="number" min="0" placeholder="0" value={form.amountPerKg} onChange={e => set("amountPerKg", e.target.value)} />
+              </Field>
+              <Field label="Product Amount (₹)">
+                <Input type="number" disabled value={productAmount || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
+              </Field>
+              <Field label="GST Percentage (%)">
+                <Input type="number" min="0" max="100" placeholder="0" value={form.gstPercentage} onChange={e => set("gstPercentage", e.target.value)} />
+              </Field>
+              <Field label="GST Amount (₹)">
+                <Input type="number" disabled value={gstAmount ? gstAmount.toFixed(2) : ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
+              </Field>
+              <Field label="Total Amount with GST (₹)">
+                <Input type="number" disabled value={totalAmountWithGst || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none font-bold text-gray-700" placeholder="Auto-calculated" />
+              </Field>
+              <Field label="Expense Amount (₹)">
+                <Input type="number" min="0" placeholder="0" value={form.expenseAmount} onChange={e => set("expenseAmount", e.target.value)} />
+              </Field>
+              <Field label="Reason for Expense">
+                <Input placeholder="Enter reason" value={form.expenseReason || ""} onChange={e => set("expenseReason", e.target.value)} />
               </Field>
             </div>
           </SectionBlock>
