@@ -129,6 +129,11 @@ export default function SettingsPage() {
         },
       });
       const data = await res.json();
+      if (!res.ok) {
+        setSyncMsg(`✗ ${data.message || "Sync failed"}`);
+        setTimeout(() => setSyncMsg(""), 4000);
+        return;
+      }
       setSyncMsg(`✓ ${data.message}`);
       await refreshUser();
       setTimeout(() => setSyncMsg(""), 4000);
