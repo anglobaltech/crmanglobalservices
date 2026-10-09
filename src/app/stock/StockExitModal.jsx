@@ -144,7 +144,8 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
       const gstPercentage = (editEntry.gstAmount && editEntry.productAmount) 
         ? ((editEntry.gstAmount / editEntry.productAmount) * 100).toFixed(2) 
         : "";
-      return { ...editEntry, gstPercentage };
+      const exchangeRate = editEntry.exchangeRate || "";
+      return { ...editEntry, gstPercentage, exchangeRate };
     }
     return {
       buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
@@ -159,13 +160,15 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
       expenseAmount: "",
       expenseReason: "",
       applyTds: editEntry ? (editEntry.tdsApplicable || false) : false,
+      currency: editEntry ? (editEntry.currency || "INR") : "INR",
+      exchangeRate: editEntry ? (editEntry.exchangeRate || "") : "",
     };
   });
 
   const amountPerKg = parseFloat(form.amountPerKg) || 0;
   const qtyDispatched = parseFloat(form.qtyDispatched) || 0;
   const expenseAmount = parseFloat(form.expenseAmount) || 0;
-  const gstPercentage = parseFloat(form.gstPercentage) || 0;
+  const gstPercentage = form.currency === 'USD' ? 0 : (parseFloat(form.gstPercentage) || 0);
   
   const productAmount = amountPerKg * qtyDispatched;
   const isTdsEligible = productAmount >= 5000000; // 50 lakhs on product amount
@@ -174,6 +177,9 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
 
   const gstAmount = productAmount * (gstPercentage / 100);
   const totalAmountWithGst = productAmountAfterTds + gstAmount;
+
+  const exchangeRate = parseFloat(form.exchangeRate) || 0;
+  const totalAmountWithGstInr = form.currency === 'USD' ? (exchangeRate ? totalAmountWithGst * exchangeRate : null) : totalAmountWithGst;
 
   const availableQty = useMemo(() => {
     if (!form.productName) return 0;
@@ -235,7 +241,8 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
         totalAmountWithGst,
         tdsApplicable: isTdsEligible ? form.applyTds : false,
         tdsAmount: tdsAmount,
-        productAmountAfterTds
+        productAmountAfterTds,
+        exchangeRate: form.currency === 'USD' ? (parseFloat(form.exchangeRate) || null) : null
       };
       keys.forEach(key => {
         if (base64Files[key]) {
@@ -356,26 +363,50 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
               <Field label="Exit Date">
                 <Input type="date" value={form.exitDate} onChange={e => set("exitDate", e.target.value)} />
               </Field>
-              <Field label="Amount per Kg (₹)">
+
+              {/* Currency Selection */}
+              <Field label="Currency">
+                <select
+                  value={form.currency || "INR"}
+                  onChange={(e) => set("currency", e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="INR">Rupees (₹)</option>
+                  <option value="USD">Dollars ($)</option>
+                </select>
+              </Field>
+
+              {form.currency === 'USD' && (
+                <Field label="Exchange Rate (1 USD = ? INR)">
+                  <Input type="number" min="0" placeholder="e.g. 84" value={form.exchangeRate} onChange={e => set("exchangeRate", e.target.value)} />
+                </Field>
+              )}
+
+              <Field label={`Amount per Kg (${form.currency === 'USD' ? '$' : '₹'})`}>
                 <Input type="number" min="0" placeholder="0" value={form.amountPerKg} onChange={e => set("amountPerKg", e.target.value)} />
               </Field>
-              <Field label="Product Amount (₹)">
+              <Field label={`Product Amount (${form.currency === 'USD' ? '$' : '₹'})`}>
                 <Input type="number" disabled value={productAmount || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
               </Field>
               {(isTdsEligible && form.applyTds) && (
-                <Field label="Product Amount After TDS (₹)">
+                <Field label={`Product Amount After TDS (${form.currency === 'USD' ? '$' : '₹'})`}>
                   <Input type="number" disabled value={productAmountAfterTds || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-blue-50 focus:outline-none text-blue-700 font-bold" placeholder="Auto-calculated" />
                 </Field>
               )}
               <Field label="GST Percentage (%)">
-                <Input type="number" min="0" max="100" placeholder="0" value={form.gstPercentage} onChange={e => set("gstPercentage", e.target.value)} />
+                <Input type="number" min="0" max="100" placeholder="0" value={form.currency === 'USD' ? "" : form.gstPercentage} disabled={form.currency === 'USD'} onChange={e => set("gstPercentage", e.target.value)} />
               </Field>
-              <Field label="GST Amount (₹)">
+              <Field label={`GST Amount (${form.currency === 'USD' ? '$' : '₹'})`}>
                 <Input type="number" disabled value={gstAmount ? gstAmount.toFixed(2) : ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none text-gray-500" placeholder="Auto-calculated" />
               </Field>
-              <Field label="Total Amount with GST (₹)">
+              <Field label={`Total Amount with GST (${form.currency === 'USD' ? '$' : '₹'})`}>
                 <Input type="number" disabled value={totalAmountWithGst || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none font-bold text-gray-700" placeholder="Auto-calculated" />
               </Field>
+              {form.currency === 'USD' && (
+                <Field label="Total Amount in INR (₹)">
+                  <Input type="number" disabled value={totalAmountWithGstInr || ""} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 focus:outline-none font-bold text-gray-700" placeholder="Auto-calculated" />
+                </Field>
+              )}
               <Field label="Expense Amount (₹)">
                 <Input type="number" min="0" placeholder="0" value={form.expenseAmount} onChange={e => set("expenseAmount", e.target.value)} />
               </Field>

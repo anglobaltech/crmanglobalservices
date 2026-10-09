@@ -6,6 +6,15 @@ import { DEPARTMENTS, DEPT_COLORS, ROLES_CONFIG } from "@/lib/data/rolesConfig";
 const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
 
+const checkAuth = (res) => {
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("crm_token");
+    localStorage.removeItem("crm_user");
+    window.location.href = "/login";
+  }
+  return res;
+};
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const AVATAR_COLORS = [
@@ -49,12 +58,14 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/users`, {
+      const res = checkAuth(await fetch(`${API}/api/users`, {
         headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      }));
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
-    } catch {
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch users. Please login again if the issue persists.");
       setUsers([]);
     } finally {
       setLoading(false);
@@ -88,14 +99,14 @@ export default function UsersPage() {
     if (!form.roleName) return alert("Select a role");
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API}/api/auth/register`, {
+      const res = checkAuth(await fetch(`${API}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify(form),
-      });
+      }));
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setShowCreate(false);
@@ -133,14 +144,14 @@ export default function UsersPage() {
         roleId: form.roleId,
         ...(form.password ? { password: form.password } : {}),
       };
-      const res = await fetch(`${API}/api/users/${editTarget.id}`, {
+      const res = checkAuth(await fetch(`${API}/api/users/${editTarget.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
         },
         body: JSON.stringify(body),
-      });
+      }));
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setShowEdit(false);
@@ -156,10 +167,10 @@ export default function UsersPage() {
 
   const toggleStatus = async (user) => {
     try {
-      const res = await fetch(`${API}/api/users/${user.id}/status`, {
+      const res = checkAuth(await fetch(`${API}/api/users/${user.id}/status`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      }));
       if (!res.ok) throw new Error("Failed");
       fetchUsers();
     } catch (err) {
@@ -175,10 +186,10 @@ export default function UsersPage() {
   const handleDelete = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API}/api/users/${deleteTarget.id}`, {
+      const res = checkAuth(await fetch(`${API}/api/users/${deleteTarget.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      }));
       if (!res.ok) throw new Error("Delete failed");
       setShowDelete(false);
       setDeleteTarget(null);
@@ -237,6 +248,10 @@ export default function UsersPage() {
 
       <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5">
         <input
+          type="search"
+          name="user-search-dummy"
+          autoComplete="off"
+          autoCorrect="off"
           placeholder="Search name, email, role..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -595,6 +610,8 @@ function UserModal({
             <input
               placeholder="Enter email address"
               type="email"
+              autoComplete="off"
+              name="user-email-prevent-autofill"
               value={form.email}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
               onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -616,6 +633,8 @@ function UserModal({
                   passwordOptional ? "New password (optional)" : "Set password"
                 }
                 type="password"
+                autoComplete="new-password"
+                name="new-password"
                 value={form.password}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
                 onChange={(e) => setForm({ ...form, password: e.target.value })}

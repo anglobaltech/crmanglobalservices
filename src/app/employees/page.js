@@ -5,6 +5,15 @@ import { useEffect, useRef, useState } from "react";
 const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
 
+const checkAuth = (res) => {
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem("crm_token");
+    localStorage.removeItem("crm_user");
+    window.location.href = "/login";
+  }
+  return res;
+};
+
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 const DEPARTMENTS = ["management", "sales", "services", "hr", "accounts", "operations", "it"];
@@ -190,12 +199,16 @@ export default function EmployeesPage() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/employees`, {
+      const res = checkAuth(await fetch(`${API}/api/employees`, {
         headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      }));
       const data = await res.json();
       setEmployees(Array.isArray(data) ? data : []);
-    } catch { setEmployees([]); }
+    } catch (err) { 
+      console.error(err);
+      alert("Failed to fetch employees. Please login again if the issue persists.");
+      setEmployees([]); 
+    }
     finally { setLoading(false); }
   };
 
@@ -220,7 +233,7 @@ export default function EmployeesPage() {
     if (!form.name || !form.email || !form.department || !form.designation) return alert("Name, Email, Department and Designation are required.");
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API}/api/employees`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(buildPayload(form)) });
+      const res = checkAuth(await fetch(`${API}/api/employees`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(buildPayload(form)) }));
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setShowCreate(false); setForm(emptyForm); fetchEmployees();
@@ -238,7 +251,7 @@ export default function EmployeesPage() {
     if (!form.name || !form.email) return alert("Name and Email are required.");
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API}/api/employees/${selected.id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(buildPayload(form)) });
+      const res = checkAuth(await fetch(`${API}/api/employees/${selected.id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` }, body: JSON.stringify(buildPayload(form)) }));
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       setShowEdit(false); setSelected(null); setForm(emptyForm); fetchEmployees();
@@ -248,7 +261,7 @@ export default function EmployeesPage() {
 
   const toggleStatus = async (emp) => {
     try {
-      const res = await fetch(`${API}/api/employees/${emp.id}/status`, { method: "PATCH", headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = checkAuth(await fetch(`${API}/api/employees/${emp.id}/status`, { method: "PATCH", headers: { Authorization: `Bearer ${getToken()}` } }));
       if (!res.ok) throw new Error("Failed");
       fetchEmployees();
     } catch (err) { alert(err.message); }
@@ -259,7 +272,7 @@ export default function EmployeesPage() {
   const handleDelete = async () => {
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API}/api/employees/${selected.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+      const res = checkAuth(await fetch(`${API}/api/employees/${selected.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } }));
       if (!res.ok) throw new Error("Delete failed");
       setShowDelete(false); setSelected(null); fetchEmployees();
     } catch (err) { alert(err.message); }

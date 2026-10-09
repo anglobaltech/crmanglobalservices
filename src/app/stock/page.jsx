@@ -159,7 +159,8 @@ function CellValue({ col, entry }) {
     return s ? <span className="text-[11px] font-bold text-gray-800">{s}</span> : <span className="text-gray-300 text-[10px]">—</span>;
   }
   if (CURRENCY_KEYS.has(col)) {
-    return v ? <span className="text-[11px] font-bold text-gray-800">₹{Number(v).toLocaleString()}</span> : <span className="text-gray-300 text-[10px]">—</span>;
+    const sym = entry.currency === 'USD' ? '$' : '₹';
+    return v ? <span className="text-[11px] font-bold text-gray-800">{sym}{Number(v).toLocaleString()}</span> : <span className="text-gray-300 text-[10px]">—</span>;
   }
   return v ? <span className="text-[11px] text-gray-700">{v}</span> : <span className="text-gray-300 text-[10px]">—</span>;
 }
@@ -534,23 +535,36 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
                 <Row label="Reason"   value={entry.rejectionReason} />
               </Sec>
               <Sec title="Financials">
-                <Row label="Price/kg"        value={entry.amountPerKg ? `₹${Number(entry.amountPerKg).toLocaleString()}` : null} />
-                <Row label="Product Amount"  value={entry.productAmount ? `₹${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.approvedQty ? `₹${(Number(entry.amountPerKg) * Number(entry.approvedQty)).toLocaleString()}` : null)} />
-                {entry.tdsApplicable && <Row label="TDS Deduction (0.1%)" value={`-₹${Number(entry.tdsAmount).toLocaleString()}`} />}
-                {entry.tdsApplicable && <Row label="Product Amount (After TDS )" value={`₹${Number(entry.productAmountAfterTds || (entry.productAmount - entry.tdsAmount)).toLocaleString()}`} />}
-                <Row 
-                  label={(() => {
-                    const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.approvedQty ? Number(entry.amountPerKg) * Number(entry.approvedQty) : 0);
-                    const pct = (prodAmt && entry.gstAmount) ? Math.round((Number(entry.gstAmount) / prodAmt) * 100) : null;
-                    return pct ? `GST (${pct}%)` : "GST Amount";
-                  })()} 
-                  value={entry.gstAmount ? `₹${Number(entry.gstAmount).toLocaleString()}` : null} 
-                />
-                <Row label="Total Amount"    value={(() => {
-                  return entry.totalAmountWithGst ? `₹${Number(entry.totalAmountWithGst).toLocaleString()}` : null;
-                })()} />
-                <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
-                <Row label="Expense Reason"  value={entry.expenseReason || null} />
+                {(() => {
+                  const sym = entry.currency === 'USD' ? '$' : '₹';
+                  return (
+                    <>
+                      <Row label="Price/kg"        value={entry.amountPerKg ? `${sym}${Number(entry.amountPerKg).toLocaleString()}` : null} />
+                      <Row label="Product Amount"  value={entry.productAmount ? `${sym}${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.approvedQty ? `${sym}${(Number(entry.amountPerKg) * Number(entry.approvedQty)).toLocaleString()}` : null)} />
+                      {entry.tdsApplicable && <Row label="TDS Deduction (0.1%)" value={`-${sym}${Number(entry.tdsAmount).toLocaleString()}`} />}
+                      {entry.tdsApplicable && <Row label="Product Amount (After TDS)" value={`${sym}${Number(entry.productAmountAfterTds || (entry.productAmount - entry.tdsAmount)).toLocaleString()}`} />}
+                      <Row 
+                        label={(() => {
+                          const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.approvedQty ? Number(entry.amountPerKg) * Number(entry.approvedQty) : 0);
+                          const pct = (prodAmt && entry.gstAmount) ? Math.round((Number(entry.gstAmount) / prodAmt) * 100) : null;
+                          return pct ? `GST (${pct}%)` : "GST Amount";
+                        })()} 
+                        value={entry.gstAmount ? `${sym}${Number(entry.gstAmount).toLocaleString()}` : null} 
+                      />
+                      <Row label="Total Amount"    value={(() => {
+                        return entry.totalAmountWithGst ? `${sym}${Number(entry.totalAmountWithGst).toLocaleString()}` : null;
+                      })()} />
+                      {entry.currency === 'USD' && (
+                        <>
+                          <Row label="Exchange Rate"   value={entry.exchangeRate ? `1 USD = ₹${Number(entry.exchangeRate).toLocaleString()}` : null} />
+                          <Row label="Total Amount (INR)" value={entry.totalAmountWithGst && entry.exchangeRate ? `₹${(Number(entry.totalAmountWithGst) * Number(entry.exchangeRate)).toLocaleString()}` : null} />
+                        </>
+                      )}
+                      <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
+                      <Row label="Expense Reason"  value={entry.expenseReason || null} />
+                    </>
+                  );
+                })()}
               </Sec>
               <Sec title="Witnesses">
                 <Row label="Witness"      value={entry.witnessName} />
@@ -562,6 +576,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
               <Sec title="Other">
                 <Row label="Date"       value={fmtDateFull(entry.entryDate)} />
                 <Row label="Created By" value={entry.createdByName} />
+                <Row label="Gate Entry Ref" value={entry.gateEntryRef} />
                 <Row label="Original Note" value={originalNote} />
               </Sec>
             </>
@@ -583,25 +598,39 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
                 <Row label="Batch No."    value={entry.batchNumber} />
                 <Row label="Qty (kg)"     value={kgStr(entry.qtyDispatched)} />
                 <Row label="Packaging"    value={entry.packagingType} />
+                <Row label="Destination"  value={entry.destination} />
               </Sec>
               <Sec title="Financials">
-                <Row label="Price/kg"        value={entry.amountPerKg ? `₹${Number(entry.amountPerKg).toLocaleString()}` : null} />
-                <Row label="Product Amount"  value={entry.productAmount ? `₹${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.qtyDispatched ? `₹${(Number(entry.amountPerKg) * Number(entry.qtyDispatched)).toLocaleString()}` : null)} />
-                {entry.tdsApplicable && <Row label="TDS Deduction (0.1%)" value={`-₹${Number(entry.tdsAmount).toLocaleString()}`} />}
-                {entry.tdsApplicable && <Row label="Product Amount (After TDS)" value={`₹${Number(entry.productAmountAfterTds || (entry.productAmount - entry.tdsAmount)).toLocaleString()}`} />}
-                <Row 
-                  label={(() => {
-                    const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.qtyDispatched ? Number(entry.amountPerKg) * Number(entry.qtyDispatched) : 0);
-                    const pct = (prodAmt && entry.gstAmount) ? Math.round((Number(entry.gstAmount) / prodAmt) * 100) : null;
-                    return pct ? `GST (${pct}%)` : "GST Amount";
-                  })()} 
-                  value={entry.gstAmount ? `₹${Number(entry.gstAmount).toLocaleString()}` : null} 
-                />
-                <Row label="Total Value"     value={(() => {
-                  return entry.totalAmountWithGst ? `₹${Number(entry.totalAmountWithGst).toLocaleString()}` : (entry.totalValue ? `₹${Number(entry.totalValue).toLocaleString()}` : null);
-                })()} />
-                <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
-                <Row label="Expense Reason"  value={entry.expenseReason || null} />
+                {(() => {
+                  const sym = entry.currency === 'USD' ? '$' : '₹';
+                  return (
+                    <>
+                      <Row label="Price/kg"        value={entry.amountPerKg ? `${sym}${Number(entry.amountPerKg).toLocaleString()}` : null} />
+                      <Row label="Product Amount"  value={entry.productAmount ? `${sym}${Number(entry.productAmount).toLocaleString()}` : (entry.amountPerKg && entry.qtyDispatched ? `${sym}${(Number(entry.amountPerKg) * Number(entry.qtyDispatched)).toLocaleString()}` : null)} />
+                      {entry.tdsApplicable && <Row label="TDS Deduction (0.1%)" value={`-${sym}${Number(entry.tdsAmount).toLocaleString()}`} />}
+                      {entry.tdsApplicable && <Row label="Product Amount (After TDS)" value={`${sym}${Number(entry.productAmountAfterTds || (entry.productAmount - entry.tdsAmount)).toLocaleString()}`} />}
+                      <Row 
+                        label={(() => {
+                          const prodAmt = entry.productAmount ? Number(entry.productAmount) : (entry.amountPerKg && entry.qtyDispatched ? Number(entry.amountPerKg) * Number(entry.qtyDispatched) : 0);
+                          const pct = (prodAmt && entry.gstAmount) ? Math.round((Number(entry.gstAmount) / prodAmt) * 100) : null;
+                          return pct ? `GST (${pct}%)` : "GST Amount";
+                        })()} 
+                        value={entry.gstAmount ? `${sym}${Number(entry.gstAmount).toLocaleString()}` : null} 
+                      />
+                      <Row label="Total Value"     value={(() => {
+                        return entry.totalAmountWithGst ? `${sym}${Number(entry.totalAmountWithGst).toLocaleString()}` : (entry.totalValue ? `${sym}${Number(entry.totalValue).toLocaleString()}` : null);
+                      })()} />
+                      {entry.currency === 'USD' && (
+                        <>
+                          <Row label="Exchange Rate"   value={entry.exchangeRate ? `1 USD = ₹${Number(entry.exchangeRate).toLocaleString()}` : null} />
+                          <Row label="Total Amount (INR)" value={entry.totalAmountWithGst && entry.exchangeRate ? `₹${(Number(entry.totalAmountWithGst) * Number(entry.exchangeRate)).toLocaleString()}` : null} />
+                        </>
+                      )}
+                      <Row label="Expense Amount"  value={entry.expenseAmount ? `₹${Number(entry.expenseAmount).toLocaleString()}` : null} />
+                      <Row label="Expense Reason"  value={entry.expenseReason || null} />
+                    </>
+                  );
+                })()}
               </Sec>
               <Sec title="Buyer Details">
                 <Row label="Buyer Name"   value={entry.buyerName} />
@@ -628,6 +657,8 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
               <Sec title="Other">
                 <Row label="Date"       value={fmtDateFull(entry.exitDate)} />
                 <Row label="Created By" value={entry.createdByName} />
+                <Row label="Gate Entry Ref" value={entry.gateEntryRef} />
+                <Row label="Stock Entry Ref" value={entry.stockEntryRef} />
                 <Row label="Original Note" value={originalNote} />
               </Sec>
               </>
@@ -893,8 +924,8 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
 const PAGE_SIZE = 20;
 
 /* ── Product Inventory Summary Card ─────────────────────────────────── */
-function ProductInventoryCard({ product, summaryData, onSetTab }) {
-  const s = summaryData || { received: 0, exited: 0, purchaseValue: 0, purchaseExpense: 0, salesValue: 0, salesExpense: 0 };
+function ProductInventoryCard({ product, summaryData, onSetTab, purchaseCurrency = '₹', salesCurrency = '₹' }) {
+  const s = summaryData || { received: 0, exited: 0, purchaseValue: 0, purchaseValueInr: 0, purchaseExpense: 0, salesValue: 0, salesValueInr: 0, salesExpense: 0 };
   
   const totalReceived = s.received;
   const totalExited   = s.exited;
@@ -902,16 +933,16 @@ function ProductInventoryCard({ product, summaryData, onSetTab }) {
   const totalPurchaseValue = s.purchaseValue;
   const totalPurchaseExpense = s.purchaseExpense;
   
-  const avgCostPerKg = totalReceived > 0 ? totalPurchaseValue / totalReceived : 0;
-  const cogs = totalExited * avgCostPerKg;
-
+  const totalPurchaseValueInr = s.purchaseValueInr ?? s.purchaseValue;
+  const totalSalesValueInr = s.salesValueInr ?? s.salesValue;
+  
   const totalSalesValue = s.salesValue;
   const totalSalesExpense = s.salesExpense;
-
   const totalCombinedExpense = totalPurchaseExpense + totalSalesExpense;
   
-  // No deductions! Just basic math as requested.
-  const profitLoss = totalSalesValue - cogs;
+  const avgCostPerKgInr = totalReceived > 0 ? totalPurchaseValueInr / totalReceived : 0;
+  const cogsInr = totalExited * avgCostPerKgInr;
+  const profitLossInr = totalSalesValueInr - cogsInr;
 
   const netBalance    = totalReceived - totalExited;
   const isLow         = netBalance > 0 && netBalance < totalReceived * 0.2;
@@ -1015,7 +1046,12 @@ function ProductInventoryCard({ product, summaryData, onSetTab }) {
           <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1.5 border-b border-black/5 pb-1">Purchase Details ({totalReceived} kg)</p>
           <div className="flex justify-between items-center px-2 py-1.5 mt-1 bg-emerald-50/50 rounded border border-emerald-100/50">
             <span className="text-xs text-gray-800 font-bold">Total Purchase:</span>
-            <span className="text-sm text-emerald-800 font-bold">₹{totalPurchaseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div className="flex flex-col text-right">
+              <span className="text-sm text-emerald-800 font-bold">{purchaseCurrency}{totalPurchaseValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              {purchaseCurrency === '$' && totalPurchaseValueInr > 0 && (
+                <span className="text-[10px] text-emerald-600 font-semibold">(₹{totalPurchaseValueInr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+              )}
+            </div>
           </div>
           <div className="flex justify-between items-center px-1 py-0.5 mt-1">
             <span className="text-[10px] font-bold text-gray-500"><span className="text-red-500">Expense:</span></span>
@@ -1027,7 +1063,12 @@ function ProductInventoryCard({ product, summaryData, onSetTab }) {
           <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1.5 border-b border-black/5 pb-1">Sales Details ({totalExited} kg)</p>
           <div className="flex justify-between items-center px-2 py-1.5 mt-1 bg-blue-50/50 rounded border border-blue-100/50">
             <span className="text-xs text-gray-800 font-bold">Total Sales:</span>
-            <span className="text-sm text-blue-800 font-bold">₹{totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div className="flex flex-col text-right">
+              <span className="text-sm text-blue-800 font-bold">{salesCurrency}{totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              {salesCurrency === '$' && totalSalesValueInr > 0 && (
+                <span className="text-[10px] text-blue-600 font-semibold">(₹{totalSalesValueInr.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+              )}
+            </div>
           </div>
           <div className="flex justify-between items-center px-1 py-0.5 mt-1">
             <span className="text-[10px] font-bold text-gray-500"><span className="text-red-500">Expense:</span></span>
@@ -1035,14 +1076,18 @@ function ProductInventoryCard({ product, summaryData, onSetTab }) {
           </div>
         </div>
 
-        <div className={`flex flex-col justify-center text-center rounded-lg p-2 border ${profitLoss >= 0 ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100"}`}>
-          <p className={`text-xs font-bold uppercase tracking-wider ${profitLoss >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-            {profitLoss >= 0 ? "Profit" : "Loss"}
+        <div className={`flex flex-col justify-center text-center rounded-lg p-2 border ${profitLossInr >= 0 ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100"}`}>
+          <p className={`text-xs font-bold uppercase tracking-wider ${profitLossInr >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {profitLossInr >= 0 ? "Profit" : "Loss"}
           </p>
           <p className="text-[10px] text-gray-500 font-medium mb-1 border-b border-black/5 pb-1">(on {totalExited} kg dispatched)</p>
-          <p className={`text-base font-bold ${profitLoss >= 0 ? "text-emerald-700" : "text-red-700"} mt-1`}>
-            ₹{Math.abs(profitLoss).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
+          {((purchaseCurrency === '$' && totalPurchaseValue > 0 && totalPurchaseValueInr === 0) || (salesCurrency === '$' && totalSalesValue > 0 && totalSalesValueInr === 0)) ? (
+            <p className="text-[10px] font-bold text-red-500 mt-1">Exchange Rate Missing</p>
+          ) : (
+            <p className={`text-base font-bold ${profitLossInr >= 0 ? "text-emerald-700" : "text-red-700"} mt-1`}>
+              ₹{Math.abs(profitLossInr).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          )}
           <div className="flex justify-between items-center px-1 py-0.5 mt-2 border-t border-black/5 pt-1">
             <span className="text-[10px] font-bold text-gray-500">Total <span className="text-red-500">Expense:</span></span>
             <span className="text-xs text-gray-700 font-bold">₹{totalCombinedExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -1466,6 +1511,12 @@ export default function StockPage() {
             product={activeProduct}
             summaryData={stockSummary[activeProduct.trim().toUpperCase()]}
             onSetTab={setTab}
+            purchaseCurrency={
+              (stockEntries.find(e => (e.productName || "").trim().toUpperCase() === activeProduct.trim().toUpperCase())?.currency === 'USD') ? '$' : '₹'
+            }
+            salesCurrency={
+              (stockExits.find(e => (e.productName || "").trim().toUpperCase() === activeProduct.trim().toUpperCase())?.currency === 'USD') ? '$' : '₹'
+            }
           />
         )}
 
