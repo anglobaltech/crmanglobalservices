@@ -924,7 +924,7 @@ function KpiCard({ icon: Icon, label, value, sub, color, active, onClick }) {
 const PAGE_SIZE = 20;
 
 /* ── Product Inventory Summary Card ─────────────────────────────────── */
-function ProductInventoryCard({ product, summaryData, onSetTab, purchaseCurrency = '₹', salesCurrency = '₹' }) {
+function ProductInventoryCard({ product, summaryData, onSetTab, purchaseCurrency = '₹', salesCurrency = '₹', activeTab }) {
   const s = summaryData || { received: 0, exited: 0, purchaseValue: 0, purchaseValueInr: 0, purchaseExpense: 0, salesValue: 0, salesValueInr: 0, salesExpense: 0 };
   
   const totalReceived = s.received;
@@ -975,10 +975,14 @@ function ProductInventoryCard({ product, summaryData, onSetTab, purchaseCurrency
         {/* Total Received */}
         <div 
           onClick={() => onSetTab("entry")}
-          className="bg-white rounded-xl p-3 text-center shadow-sm border border-emerald-100 cursor-pointer hover:shadow-md hover:border-emerald-300 transition-all active:scale-[0.98]"
+          className={`rounded-xl p-3 text-center shadow-sm border cursor-pointer transition-all active:scale-[0.98] ${
+            activeTab === "entry" || activeTab === "approved" || activeTab === "rejected"
+              ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-200 shadow-emerald-100" 
+              : "bg-white border-emerald-100 hover:shadow-md hover:border-emerald-300"
+          }`}
         >
-          <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
-            <ArrowUpCircle size={13} className="text-emerald-600" />
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1.5 ${activeTab === "entry" || activeTab === "approved" || activeTab === "rejected" ? "bg-emerald-500 text-white shadow-inner" : "bg-emerald-100"}`}>
+            <ArrowUpCircle size={13} className={activeTab === "entry" || activeTab === "approved" || activeTab === "rejected" ? "text-white" : "text-emerald-600"} />
           </div>
           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total Stock In</p>
           <p className="text-base font-bold text-emerald-700 leading-tight">
@@ -991,10 +995,14 @@ function ProductInventoryCard({ product, summaryData, onSetTab, purchaseCurrency
         {/* Total Exited */}
         <div 
           onClick={() => onSetTab("exit")}
-          className="bg-white rounded-xl p-3 text-center shadow-sm border border-orange-100 cursor-pointer hover:shadow-md hover:border-orange-300 transition-all active:scale-[0.98]"
+          className={`rounded-xl p-3 text-center shadow-sm border cursor-pointer transition-all active:scale-[0.98] ${
+            activeTab === "exit"
+              ? "bg-orange-50 border-orange-400 ring-2 ring-orange-200 shadow-orange-100"
+              : "bg-white border-orange-100 hover:shadow-md hover:border-orange-300"
+          }`}
         >
-          <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-1.5">
-            <ArrowDownCircle size={13} className="text-orange-500" />
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center mx-auto mb-1.5 ${activeTab === "exit" ? "bg-orange-500 text-white shadow-inner" : "bg-orange-100"}`}>
+            <ArrowDownCircle size={13} className={activeTab === "exit" ? "text-white" : "text-orange-500"} />
           </div>
           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Total Stock Out</p>
           <p className="text-base font-bold text-orange-600 leading-tight">
@@ -1455,53 +1463,34 @@ export default function StockPage() {
             active={tab === "rejected"} onClick={() => { setTab("rejected"); setPage(1); }} />
         </div>
 
-        {/* ── Product Filter Strip (collapsible) ────────────────────────── */}
+        {/* ── Product Filter Strip (always visible) ────────────────────────── */}
         {allProducts.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Header row — always visible */}
-            <button
-              onClick={() => setShowProductFilter(v => !v)}
-              className="w-full flex items-center gap-2 px-3 sm:px-4 py-2.5 cursor-pointer hover:bg-gray-50/60 transition-colors flex-wrap"
-            >
-              <div className="w-5 h-5 bg-blue-50 rounded-md flex items-center justify-center flex-shrink-0">
-                <Filter size={10} className="text-blue-500" />
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 bg-blue-50 rounded-md flex items-center justify-center flex-shrink-0">
+                <Filter size={12} className="text-blue-600" />
               </div>
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Filter by Product</span>
-              <span className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full font-bold">{allProducts.length}</span>
-
-              {/* Active product badge */}
+              <div>
+                <h3 className="text-xs font-bold text-gray-800 tracking-wide mt-1">
+                  Select a Product to Filter Data
+                </h3>
+              </div>
               {activeProduct && (
-                <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 bg-blue-600 text-white rounded-full ml-1">
-                  <Boxes size={8} />
-                  <span className="max-w-[100px] truncate">{activeProduct}</span>
-                  <span
-                    role="button"
-                    onClick={(e) => { e.stopPropagation(); setActiveProduct(null); setPage(1); }}
-                    className="ml-0.5 hover:opacity-70 cursor-pointer"
-                  >
-                    <X size={7} />
-                  </span>
-                </span>
+                <button
+                  onClick={() => { setActiveProduct(null); setPage(1); }}
+                  className="ml-auto text-[10px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-sm"
+                >
+                  <X size={10} /> Clear Filter
+                </button>
               )}
-
-              <ChevronDown
-                size={13}
-                className={`ml-auto text-gray-400 transition-transform duration-200 ${showProductFilter ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {/* Collapsible chips area */}
-            {showProductFilter && (
-              <div className="border-t border-gray-100 px-3 sm:px-4 py-2.5">
-                <ProductFilterStrip
-                  products={allProducts}
-                  activeProduct={activeProduct}
-                  onSelect={(p) => { setActiveProduct(p); setPage(1); setSelectedIds([]); }}
-                  stockEntries={stockEntries}
-                  stockExits={stockExits}
-                />
-              </div>
-            )}
+            </div>
+            <ProductFilterStrip
+              products={allProducts}
+              activeProduct={activeProduct}
+              onSelect={(p) => { setActiveProduct(p); setPage(1); setSelectedIds([]); }}
+              stockEntries={stockEntries}
+              stockExits={stockExits}
+            />
           </div>
         )}
 
@@ -1511,6 +1500,7 @@ export default function StockPage() {
             product={activeProduct}
             summaryData={stockSummary[activeProduct.trim().toUpperCase()]}
             onSetTab={setTab}
+            activeTab={tab}
             purchaseCurrency={
               (stockEntries.find(e => (e.productName || "").trim().toUpperCase() === activeProduct.trim().toUpperCase())?.currency === 'USD') ? '$' : '₹'
             }

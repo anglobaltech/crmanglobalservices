@@ -176,10 +176,10 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
   const productAmountAfterTds = productAmount - tdsAmount;
 
   const gstAmount = productAmount * (gstPercentage / 100);
-  const totalAmountWithGst = productAmountAfterTds + gstAmount;
+  const totalAmountWithGst = Math.round(productAmountAfterTds + gstAmount);
 
   const exchangeRate = parseFloat(form.exchangeRate) || 0;
-  const totalAmountWithGstInr = form.currency === 'USD' ? (exchangeRate ? totalAmountWithGst * exchangeRate : null) : totalAmountWithGst;
+  const totalAmountWithGstInr = form.currency === 'USD' ? (exchangeRate ? Math.round(totalAmountWithGst * exchangeRate) : null) : totalAmountWithGst;
 
   const availableQty = useMemo(() => {
     if (!form.productName) return 0;

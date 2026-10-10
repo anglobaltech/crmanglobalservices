@@ -153,10 +153,10 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
   const productAmountAfterTds = productAmount - tdsAmount;
 
   const gstAmount = productAmount * (gstPercentage / 100);
-  const totalAmountWithGst = productAmountAfterTds + gstAmount;
+  const totalAmountWithGst = Math.round(productAmountAfterTds + gstAmount);
 
   const exchangeRate = parseFloat(form.exchangeRate) || 0;
-  const totalAmountWithGstInr = form.currency === 'USD' ? (exchangeRate ? totalAmountWithGst * exchangeRate : null) : totalAmountWithGst;
+  const totalAmountWithGstInr = form.currency === 'USD' ? (exchangeRate ? Math.round(totalAmountWithGst * exchangeRate) : null) : totalAmountWithGst;
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
   const rejected = parseInt(form.rejectedQty) || 0;
