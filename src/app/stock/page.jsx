@@ -82,6 +82,7 @@ const GATE_COLS = [
   { key: "gateEntryId",            label: "ID" },
   { key: "productName",            label: "Product" },
   { key: "itemBatchNumber",        label: "Batch No." },
+  { key: "warehouseLocation",      label: "Warehouse Loc." },
   { key: "quantityKg",             label: "Qty (kg)" },
   { key: "vehicleNumber",          label: "Vehicle" },
   { key: "transporterName",        label: "Transporter" },
@@ -101,6 +102,7 @@ const ENTRY_COLS = [
   { key: "invoiceNumber",  label: "Invoice No." },
   { key: "productName",    label: "Product" },
   { key: "batchNumber",    label: "Batch No." },
+  { key: "warehouseLocation", label: "Warehouse Loc." },
   { key: "billFrom",       label: "From" },
   { key: "billTo",         label: "To" },
   { key: "totalBilledQty", label: "Total Qty" },
@@ -118,6 +120,7 @@ const EXIT_COLS = [
   { key: "stockExitId",      label: "ID" },
   { key: "productName",      label: "Product" },
   { key: "batchNumber",      label: "Batch No." },
+  { key: "warehouseLocation", label: "Warehouse Loc." },
   { key: "qtyDispatched",    label: "Qty (kg)" },
   { key: "buyerCompanyName", label: "Company" },
   { key: "transportMode",    label: "Mode" },
@@ -399,6 +402,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
                 <Row label="Product Name"   value={entry.productName} />
                 <Row label="Packaging"      value={entry.packagingDetails} />
                 <Row label="Batch No."      value={entry.itemBatchNumber} />
+                <Row label="Location"       value={entry.warehouseLocation} />
                 <Row label="Gate Qty (kg)"  value={entry.quantityKg != null ? `${Number(entry.quantityKg).toLocaleString()} kg` : null} />
                 <Row label="Imported By"    value={entry.importedByOther || entry.importedBy} />
               </Sec>
@@ -525,6 +529,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
               <Sec title="Product Info">
                 <Row label="Product Name" value={entry.productName} />
                 <Row label="Batch No."    value={entry.batchNumber} />
+                <Row label="Location"     value={entry.warehouseLocation} />
                 <Row label="HSN Code"     value={entry.hsnCode} />
                 <Row label="Vehicle No."  value={entry.vehicleNumber} />
               </Sec>
@@ -596,6 +601,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
               <Sec title="Product Details">
                 <Row label="Product Name" value={entry.productName} />
                 <Row label="Batch No."    value={entry.batchNumber} />
+                <Row label="Location"     value={entry.warehouseLocation} />
                 <Row label="Qty (kg)"     value={kgStr(entry.qtyDispatched)} />
                 <Row label="Packaging"    value={entry.packagingType} />
                 <Row label="Destination"  value={entry.destination} />
@@ -687,7 +693,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
           </div>
 
           {/* Add Remark Section (Always visible, very useful for viewers) */}
-          <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+          <div className="px-5 py-4 border-t-2 border-gray-200 shadow-[0_-10px_20px_-5px_rgba(0,0,0,0.1)] bg-white flex-shrink-0 relative z-10">
             <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-2">Add Remark / Update</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <input
@@ -713,7 +719,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
             </div>
           </div>
 
-          <div className="px-5 py-3 border-t border-gray-100 flex-shrink-0 flex sm:justify-end flex-col sm:flex-row gap-3">
+          <div className="px-5 py-4 bg-white border-t border-gray-100 rounded-b-2xl flex-shrink-0 flex sm:justify-end flex-col sm:flex-row gap-3">
             {onEdit && (
               <button onClick={onEdit}
                 className="w-full sm:w-auto px-6 py-2.5 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl cursor-pointer transition-colors"

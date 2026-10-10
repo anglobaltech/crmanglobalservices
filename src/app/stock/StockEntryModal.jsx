@@ -130,6 +130,7 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
       witnessName: "", witnessPhone: "",
       otherPartyName: "", otherPartyPhone: "", otherPartyRole: "seller",
       gateEntryRef: "",
+      warehouseLocation: "",
       entryDate: new Date().toISOString().split("T")[0],
       remarks: "",
       amountPerKg: "", 
@@ -280,6 +281,9 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
               </Field>
               <Field label="Lot No / Batch No">
                 <Input placeholder="Lot / Batch number" value={form.batchNumber} onChange={e => set("batchNumber", e.target.value)} />
+              </Field>
+              <Field label="Warehouse Location">
+                <Input placeholder="e.g. Rack A1, Section C" value={form.warehouseLocation} onChange={e => set("warehouseLocation", e.target.value)} />
               </Field>
               
               {/* Currency Selection */}

@@ -151,7 +151,7 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
       buyerName: "", buyerCompanyName: "", buyerPhone: "", buyerGst: "", buyerFssaiNumber: "",
       invoiceDocNumber: "", ewayBillApplicable: null, ewayBillNumber: "",
       productName: "", batchNumber: "", qtyDispatched: "", packagingType: "",
-      destination: "", stockEntryRef: "", gateEntryRef: "",
+      destination: "", stockEntryRef: "", gateEntryRef: "", warehouseLocation: "",
       transportMode: "transporter", transporterName: "", vehicleNumber: "", driverName: "", driverPhone: "", driverId: "",
       exitDate: new Date().toISOString().split("T")[0], remarks: "",
       vehiclePhoto: null, itemPhoto: null, itemVideo: null,
@@ -359,6 +359,9 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
               </Field>
               <Field label="Type of Packaging">
                 <Input placeholder="e.g. 50kg bags, Box" value={form.packagingType} onChange={e => set("packagingType", e.target.value)} />
+              </Field>
+              <Field label="Warehouse Location">
+                <Input placeholder="e.g. Rack A1, Section C" value={form.warehouseLocation} onChange={e => set("warehouseLocation", e.target.value)} />
               </Field>
               <Field label="Exit Date">
                 <Input type="date" value={form.exitDate} onChange={e => set("exitDate", e.target.value)} />

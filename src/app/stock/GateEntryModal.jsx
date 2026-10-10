@@ -202,6 +202,7 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
     productName: "",
     packagingDetails: "",
     quantityKg: "",
+    warehouseLocation: "",
     importedBy: "",
     importedByOther: "",
     productMatchesInvoice: null,
@@ -552,6 +553,15 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
                     placeholder="Importer name / company name"
                     value={form.importedByOther}
                     onChange={e => set("importedByOther", e.target.value)}
+                  />
+                </Field>
+
+                {/* Warehouse Location */}
+                <Field label="Warehouse Location">
+                  <Input
+                    placeholder="e.g. Rack A1, Section C"
+                    value={form.warehouseLocation}
+                    onChange={e => set("warehouseLocation", e.target.value)}
                   />
                 </Field>
 
