@@ -176,7 +176,8 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
         companyInvoiceNumber: editEntry.companyInvoiceDetails || editEntry.invoiceDocNumber || "",
         companyEwayNumber: editEntry.ewayBillDetails || editEntry.ewayBillNumber || "",
         invoiceFilledNumber: editEntry.invoiceDocNumber || "",
-        ewayFilledNumber: editEntry.ewayBillNumber || ""
+        ewayFilledNumber: editEntry.ewayBillNumber || "",
+        warehouseLocation: editEntry.warehouseLocation || ""
       };
     }
     return {
@@ -293,6 +294,7 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
         packagingDetails: form.packagingDetails || null,
         quantityKg: form.quantityKg ? Number(form.quantityKg) : null,
         importedBy: form.importedByOther || null,
+        warehouseLocation: form.warehouseLocation || null,
         productMatchesInvoice: form.productMatchesInvoice,
         productMatchesEway: form.productMatchesEway,
         gstNumberSeller: form.gstNumberSeller || null,
@@ -556,10 +558,10 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
                   />
                 </Field>
 
-                {/* Warehouse Location */}
-                <Field label="Warehouse Location">
+                {/* Warehouse Location / Address */}
+                <Field label="Warehouse Location / Address">
                   <Input
-                    placeholder="e.g. Rack A1, Section C"
+                    placeholder="e.g. Warehouse Address / Rack A1, Section C"
                     value={form.warehouseLocation}
                     onChange={e => set("warehouseLocation", e.target.value)}
                   />

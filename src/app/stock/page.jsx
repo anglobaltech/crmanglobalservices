@@ -142,7 +142,9 @@ const DATE_KEYS   = new Set(["entryDate","exitDate","createdAt"]);
 const ID_COLOR    = { gateEntryId: "blue", stockEntryId: "green", stockExitId: "orange" };
 
 function CellValue({ col, entry }) {
-  const v = entry[col];
+  const v = col === "importedByOther" ? (entry.importedByOther || entry.importedBy)
+          : col === "warehouseLocation" ? (entry.warehouseLocation || entry.warehouseAddress)
+          : entry[col];
   if (YES_NO_KEYS.has(col)) return <YesNo val={v} />;
   if (DATE_KEYS.has(col))   return <DateChip val={v} />;
   if (ID_COLOR[col]) {
@@ -402,7 +404,7 @@ function DetailModal({ entry, type, onClose, onEdit, onAddRemark, onMarkRemarkDo
                 <Row label="Product Name"   value={entry.productName} />
                 <Row label="Packaging"      value={entry.packagingDetails} />
                 <Row label="Batch No."      value={entry.itemBatchNumber} />
-                <Row label="Location"       value={entry.warehouseLocation} />
+                <Row label="Location / Address" value={entry.warehouseLocation || entry.warehouseAddress} />
                 <Row label="Gate Qty (kg)"  value={entry.quantityKg != null ? `${Number(entry.quantityKg).toLocaleString()} kg` : null} />
                 <Row label="Imported By"    value={entry.importedByOther || entry.importedBy} />
               </Sec>
@@ -773,10 +775,16 @@ function GateCard({ e, onClick }) {
             <span className="truncate">{e.transporterName}</span>
           </div>
         )}
-        {e.importedByOther && (
+        {(e.importedByOther || e.importedBy) && (
           <div className="flex items-center gap-1.5 text-gray-600 col-span-2">
             <User size={11} className="text-gray-400 flex-shrink-0" />
-            <span className="truncate max-w-[200px] sm:max-w-xs">{e.importedByOther}</span>
+            <span className="truncate max-w-[200px] sm:max-w-xs">{e.importedByOther || e.importedBy}</span>
+          </div>
+        )}
+        {(e.warehouseLocation || e.warehouseAddress) && (
+          <div className="flex items-center gap-1.5 text-gray-600 col-span-2">
+            <Building2 size={11} className="text-gray-400 flex-shrink-0" />
+            <span className="truncate max-w-[200px] sm:max-w-xs">{e.warehouseLocation || e.warehouseAddress}</span>
           </div>
         )}
       </div>
