@@ -58,12 +58,20 @@ const Textarea = (props) => (
   />
 );
 
-const fileToBase64 = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = error => reject(error);
-});
+async function uploadToFirebase(file, path) {
+  const storageRef = ref(storage, path);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => {
+      try {
+        const url = await getDownloadURL(storageRef);
+        resolve(url);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
 
 const FileUpload = ({ label, value, onChange, accept, hint, fileName, uploading }) => (
   <div>
@@ -261,20 +269,29 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
     setSaving(true); setError("");
     try {
       setUploading({ all: true });
-      const base64Files = {};
+
+      const targetId = editEntry
+        ? (editEntry.gateEntryId || editEntry.id)
+        : (await api.get("/api/stock/next-id?type=gate")).data.id;
+      const folder = `stockmanagement/gateentry/${targetId}`;
+
       const mediaKeys = ["driverPhoto", "gateOpeningVideo", "productPhoto", "productVideo", "coaFile"];
-      
+      const uploadedUrls = {};
+
       await Promise.all(
         mediaKeys.map(async (key) => {
           const file = pendingFiles.current[key];
           if (file) {
-            base64Files[key] = await fileToBase64(file);
+            const ext = file.name ? file.name.split(".").pop() : (file.type ? file.type.split("/")[1] : "bin");
+            const path = `${folder}/${key}.${ext}`;
+            uploadedUrls[key] = await uploadToFirebase(file, path);
           }
         })
       );
       setUploading({});
 
       const payload = {
+        gateEntryId: targetId,
         invoiceDocNumber: form.invoiceFilledNumber || form.invoiceDocNumber || null,
         invoiceDocPresent: form.invoiceDocPresent,
         ewayBillNumber: form.ewayFilledNumber || form.ewayBillNumber || null,
@@ -309,8 +326,8 @@ export default function GateEntryModal({ editEntry, onClose, onCreated }) {
       };
 
       mediaKeys.forEach(key => {
-        if (base64Files[key]) {
-          payload[key] = base64Files[key];
+        if (uploadedUrls[key]) {
+          payload[key] = uploadedUrls[key];
         } else if (pendingFiles.current[key] === null) {
           payload[key] = null;
         } else if (form[key] && String(form[key]).startsWith("blob:")) {

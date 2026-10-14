@@ -25,13 +25,23 @@ const Textarea = (props) => (
 );
 
 import { Loader2 } from "lucide-react";
+import { storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
-const fileToBase64 = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result);
-  reader.onerror = error => reject(error);
-});
+async function uploadToFirebase(file, path) {
+  const storageRef = ref(storage, path);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => {
+      try {
+        const url = await getDownloadURL(storageRef);
+        resolve(url);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+}
 
 const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint, uploading }) => {
   const isVideo = accept?.includes("video");
@@ -192,14 +202,22 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
 
     try {
       setUploading(true);
-      const base64Files = {};
+
+      const targetId = editEntry
+        ? (editEntry.stockEntryId || editEntry.id)
+        : (await api.get("/api/stock/next-id?type=entry")).data.id;
+      const folder = `stockmanagement/stockentry/${targetId}`;
+
       const keys = ["rejectedItemPhoto", "rejectedItemVideo"];
-      
+      const uploadedUrls = {};
+
       await Promise.all(
         keys.map(async (key) => {
           const file = pendingFiles[key];
           if (file) {
-            base64Files[key] = await fileToBase64(file);
+            const ext = file.name ? file.name.split(".").pop() : (file.type ? file.type.split("/")[1] : "bin");
+            const path = `${folder}/${key}.${ext}`;
+            uploadedUrls[key] = await uploadToFirebase(file, path);
           }
         })
       );
@@ -207,6 +225,7 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
 
       const payload = { 
         ...form,
+        stockEntryId: targetId,
         productAmount,
         gstAmount,
         totalAmountWithGst,
@@ -216,8 +235,8 @@ export default function StockEntryModal({ editEntry, onClose, onCreated, gateEnt
         exchangeRate: form.currency === 'USD' ? (parseFloat(form.exchangeRate) || null) : null
       };
       keys.forEach(key => {
-        if (base64Files[key]) {
-          payload[key] = base64Files[key];
+        if (uploadedUrls[key]) {
+          payload[key] = uploadedUrls[key];
         } else if (pendingFiles[key] === null) {
           payload[key] = null;
         } else if (payload[key] && payload[key].startsWith("blob:")) {
