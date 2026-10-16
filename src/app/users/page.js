@@ -7,7 +7,7 @@ const getToken = () =>
   typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
 
 const checkAuth = (res) => {
-  if (res.status === 401 || res.status === 403) {
+  if (res.status === 401) {
     localStorage.removeItem("crm_token");
     localStorage.removeItem("crm_user");
     window.location.href = "/login";

@@ -28,19 +28,46 @@ import { Loader2 } from "lucide-react";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
-async function uploadToFirebase(file, path) {
-  const storageRef = ref(storage, path);
-  return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file);
-    task.on("state_changed", null, reject, async () => {
-      try {
-        const url = await getDownloadURL(storageRef);
-        resolve(url);
-      } catch (err) {
-        reject(err);
-      }
-    });
+const fileToBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
   });
+
+async function uploadToFirebase(file, path) {
+  try {
+    const storageRef = ref(storage, path);
+    return await new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(storageRef, file);
+      task.on("state_changed", null, reject, async () => {
+        try {
+          const url = await getDownloadURL(storageRef);
+          resolve(url);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  } catch (clientErr) {
+    console.warn("Client Firebase Storage upload failed, falling back to /api/upload:", clientErr?.message);
+    const base64File = await fileToBase64(file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify({ base64File, storagePath: path }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "Failed to upload file to storage");
+    }
+    return data.url;
+  }
 }
 
 const YesNo = ({ value, onChange }) => (
@@ -204,6 +231,22 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
     return Math.max(0, s.received - totalExited);
   }, [form.productName, stockSummary, editEntry]);
 
+  const availableProductOptions = useMemo(() => {
+    const list = [];
+    Object.keys(stockSummary || {}).forEach(name => {
+      const s = stockSummary[name];
+      const remaining = (s.received || 0) - (s.exited || 0);
+      list.push({ name, remaining });
+    });
+    (stockEntries || []).forEach(e => {
+      const n = (e.productName || "").trim().toUpperCase();
+      if (n && !list.some(item => item.name === n)) {
+        list.push({ name: n, remaining: Number(e.approvedQty) || 0 });
+      }
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [stockSummary, stockEntries]);
+
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
   const [pendingFiles, setPendingFiles] = useState({});
@@ -353,7 +396,19 @@ export default function StockExitModal({ editEntry, onClose, onCreated, gateEntr
           <SectionBlock num={3} title="Product Details" color="orange">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Name of Product" required>
-                <Input placeholder="Product name" value={form.productName} onChange={e => set("productName", e.target.value)} />
+                <Input 
+                  list="availableProductsList"
+                  placeholder="Product name or select from stock" 
+                  value={form.productName} 
+                  onChange={e => set("productName", e.target.value)} 
+                />
+                <datalist id="availableProductsList">
+                  {availableProductOptions.map(p => (
+                    <option key={p.name} value={p.name}>
+                      {p.remaining > 0 ? `${p.remaining.toLocaleString()} kg available` : "Out of stock"}
+                    </option>
+                  ))}
+                </datalist>
               </Field>
               <Field label="Lot No / Batch No">
                 <Input placeholder="e.g. BATCH-001" value={form.batchNumber} onChange={e => set("batchNumber", e.target.value)} />

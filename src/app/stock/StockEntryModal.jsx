@@ -28,19 +28,46 @@ import { Loader2 } from "lucide-react";
 import { storage } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
-async function uploadToFirebase(file, path) {
-  const storageRef = ref(storage, path);
-  return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(storageRef, file);
-    task.on("state_changed", null, reject, async () => {
-      try {
-        const url = await getDownloadURL(storageRef);
-        resolve(url);
-      } catch (err) {
-        reject(err);
-      }
-    });
+const fileToBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
   });
+
+async function uploadToFirebase(file, path) {
+  try {
+    const storageRef = ref(storage, path);
+    return await new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(storageRef, file);
+      task.on("state_changed", null, reject, async () => {
+        try {
+          const url = await getDownloadURL(storageRef);
+          resolve(url);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  } catch (clientErr) {
+    console.warn("Client Firebase Storage upload failed, falling back to /api/upload:", clientErr?.message);
+    const base64File = await fileToBase64(file);
+    const token = typeof window !== "undefined" ? localStorage.getItem("crm_token") : "";
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify({ base64File, storagePath: path }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "Failed to upload file to storage");
+    }
+    return data.url;
+  }
 }
 
 const MediaUpload = ({ label, value, onChange, accept, icon: Icon, hint, uploading }) => {
